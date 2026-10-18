@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Kalender Acara</title>
+    <script>
+        // Terapkan tema sebelum halaman tampil supaya tidak berkedip
+        (function () {
+            try {
+                var t = localStorage.getItem('theme');
+                if (!t) t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                document.documentElement.setAttribute('data-theme', t);
+            } catch (e) { }
+        })();
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <h1><i class="fas fa-calendar-alt"></i> Kalender Acara</h1>
+            <div class="header-controls">
+                <button id="today-btn">Hari Ini</button>
+                <div class="view-options">
+                    <button class="view-option" data-view="day">Hari</button>
+                    <button class="view-option" data-view="week">Minggu</button>
+                    <button class="view-option active" data-view="month">Bulan</button>
+                </div>
+                <div class="date-navigation">
+                    <button id="prev-btn"><i class="fas fa-chevron-left"></i></button>
+                    <h2 id="current-date">Oktober 2026</h2>
+                    <button id="next-btn"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                <button id="theme-toggle" title="Ganti ke mode gelap" aria-label="Ganti mode terang/gelap">
+                    <i class="fas fa-moon"></i>
+                </button>
+            </div>
+        </header>
+
+        <main class="app-main">
+            <div class="calendar-view" id="calendar-view">
+                <!-- Isi kalender dibuat oleh JavaScript -->
+            </div>
+
+            <aside class="sidebar">
+                <div class="sidebar-header">
+                    <h3>Acara Mendatang</h3>
+                    <button id="add-event-btn"><i class="fas fa-plus"></i> Tambah</button>
+                </div>
+                <div class="events-list" id="events-list">
+                    <!-- Daftar acara ditampilkan di sini -->
+                </div>
+                <div class="alarm-panel">
+                    <div class="alarm-panel-title">🔔 Nada Alarm</div>
+                    <div id="alarm-sound-name" class="alarm-sound-name">🎵 Nada bawaan (lonceng)</div>
+                    <div class="alarm-buttons">
+                        <button id="alarm-pick-btn" type="button">📁 Pilih lagu</button>
+                        <button id="alarm-edit-btn" type="button">✂ Atur potongan</button>
+                        <button id="alarm-test-btn" type="button">▶ Coba</button>
+                        <button id="alarm-reset-btn" type="button">↺ Nada bawaan</button>
+                    </div>
+                    <label class="volume-row">
+                        <span>🔊 Volume</span>
+                        <input type="range" id="alarm-volume" min="0" max="100" value="80">
+                    </label>
+                    <button id="notif-btn" type="button" class="notif-btn">🔔 Aktifkan notifikasi</button>
+                    <input type="file" id="alarm-file" accept="audio/*" hidden>
+                    <div id="alarm-status" class="alarm-status"></div>
+                    <div class="alarm-hint">Alarm hanya berbunyi selama kalender ini terbuka di browser.</div>
+                </div>
+                <div class="backup-panel">
+                    <div class="backup-buttons">
+                        <button id="export-btn" type="button" title="Unduh semua acara sebagai file JSON"><i
+                                class="fas fa-download"></i> Ekspor</button>
+                        <button id="import-btn" type="button" title="Pulihkan acara dari file JSON"><i
+                                class="fas fa-upload"></i> Impor</button>
+                    </div>
+                    <input type="file" id="import-file" accept="application/json,.json" hidden>
+                    <div id="backup-status" class="backup-status"></div>
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <!-- Modal Tambah/Edit Acara -->
+    <div class="modal" id="event-modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h2 id="form-title">Tambah Acara Baru</h2>
+            <form id="event-form">
+                <div class="form-group">
+                    <label for="event-title">Judul</label>
+                    <input type="text" id="event-title" required>
+                </div>
+                <div class="form-group">
+                    <label for="event-date">Tanggal</label>
+                    <input type="date" id="event-date" required>
+                </div>
+                <div class="form-group time-group">
+                    <div>
+                        <label for="event-start-time">Waktu Mulai</label>
+                        <input type="time" id="event-start-time" required>
+                    </div>
+                    <div>
+                        <label for="event-end-time">Waktu Selesai</label>
+                        <input type="time" id="event-end-time" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="event-description">Deskripsi</label>
+                    <textarea id="event-description" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="event-color">Warna</label>
+                    <select id="event-color">
+                        <option value="#4e73df" selected>Biru</option>
+                        <option value="#1cc88a">Hijau</option>
+                        <option value="#f6c23e">Kuning</option>
+                        <option value="#e74a3b">Merah</option>
+                        <option value="#858796">Abu-abu</option>
+                        <option value="#5a5c69">Gelap</option>
+                    </select>
+                </div>
+                <div class="form-group alarm-group">
+                    <label class="alarm-check">
+                        <input type="checkbox" id="event-alarm" checked>
+                        <span>🔔 Bunyikan alarm</span>
+                    </label>
+                    <select id="event-alarm-before" aria-label="Waktu alarm">
+                        <option value="0" selected>Tepat waktu</option>
+                        <option value="5">5 menit sebelumnya</option>
+                        <option value="10">10 menit sebelumnya</option>
+                        <option value="15">15 menit sebelumnya</option>
+                        <option value="30">30 menit sebelumnya</option>
+                        <option value="60">1 jam sebelumnya</option>
+                    </select>
+                </div>
+                <button type="submit" class="save-btn">Simpan Acara</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Detail Acara -->
+    <div class="modal" id="event-details-modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h2 id="details-title">Judul Acara</h2>
+            <div class="event-details">
+                <p><i class="fas fa-calendar-day"></i> <span id="details-date">Tanggal</span></p>
+                <p><i class="fas fa-clock"></i> <span id="details-time">Waktu</span></p>
+                <p><i class="fas fa-align-left"></i> <span id="details-description">Deskripsi</span></p>
+                <p><span>🔔</span> <span id="details-alarm">Alarm</span></p>
+            </div>
+            <div class="event-actions">
+                <button id="edit-event-btn">Edit</button>
+                <button id="delete-event-btn">Hapus</button>
+                <button id="close-details-btn">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Editor nada dering: pilih potongan, tes, lalu jadikan nada dering -->
+    <div class="modal" id="ringtone-modal">
+        <div class="modal-content ringtone-content">
+            <span class="close-btn" id="rt-close">&times;</span>
+            <h2>🎵 Atur Nada Dering</h2>
+            <div class="rt-file" id="rt-file">-</div>
+
+            <div class="rt-wave-wrap">
+                <canvas id="rt-canvas"></canvas>
+                <div class="rt-wave-msg" id="rt-wave-msg"></div>
+            </div>
+            <div class="rt-time-row"><span id="rt-now">0:00.0</span><span id="rt-total">/ 0:00.0</span></div>
+
+            <div class="rt-range">
+                <div class="rt-range-head"><span>▶ Mulai dari</span><b id="rt-start-label">0:00.0</b></div>
+                <input type="range" id="rt-start" min="0" max="1" step="0.1" value="0" disabled>
+                <button type="button" class="rt-mini" id="rt-set-start" disabled>Mulai dari posisi tes</button>
+            </div>
+
+            <div class="rt-range">
+                <div class="rt-range-head"><span>⏹ Berhenti di</span><b id="rt-end-label">0:00.0</b></div>
+                <input type="range" id="rt-end" min="0" max="1" step="0.1" value="1" disabled>
+                <button type="button" class="rt-mini" id="rt-set-end" disabled>Berhenti di posisi tes</button>
+            </div>
+
+            <div class="rt-length" id="rt-length">Durasi potongan: 0:00.0</div>
+
+            <div class="rt-actions">
+                <button type="button" id="rt-test" disabled>▶ Tes potongan</button>
+                <button type="button" id="rt-save" disabled>💾 Jadikan nada dering</button>
+            </div>
+            <div class="rt-hint">Geser penggeser untuk memilih bagian lagu, tekan <b>Tes</b> untuk mendengarkan, lalu
+                <b>Jadikan nada dering</b>. Saat tes berjalan, tombol "posisi tes" menandai titik mulai/berhenti tepat
+                di bagian yang sedang terdengar.
+            </div>
+        </div>
+    </div>
+
+    <!-- Popup alarm -->
+    <div class="alarm-overlay" id="alarm-overlay" role="alertdialog" aria-live="assertive" aria-labelledby="alarm-title"
+        hidden>
+        <div class="alarm-card" id="alarm-card">
+            <div class="alarm-bar"></div>
+            <div class="alarm-bell-wrap"><span class="alarm-bell">🔔</span></div>
+            <div class="alarm-when" id="alarm-when"></div>
+            <h2 class="alarm-title" id="alarm-title"></h2>
+            <div class="alarm-time" id="alarm-time"></div>
+            <p class="alarm-desc" id="alarm-desc"></p>
+            <div class="alarm-queue" id="alarm-queue"></div>
+            <div class="alarm-actions">
+                <button id="alarm-snooze" type="button">😴 Tunda 5 menit</button>
+                <button id="alarm-dismiss" type="button">✔ Matikan</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

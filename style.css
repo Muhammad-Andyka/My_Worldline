@@ -1,0 +1,1631 @@
+:root {
+    --primary-color: #4e73df;
+    --primary-dark: #2e59d9;
+    --secondary-color: #f8f9fc;
+    --text-color: #5a5c69;
+    --light-gray: #d1d3e2;
+    --border-color: #e3e6f0;
+    --danger-color: #e74a3b;
+    --success-color: #1cc88a;
+    --warning-color: #f6c23e;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+html {
+    -webkit-text-size-adjust: 100%;
+}
+
+body {
+    background-color: #f8f9fc;
+    color: var(--text-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.app-container {
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+}
+
+.app-header {
+    background-color: white;
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.app-header h1 {
+    color: var(--primary-color);
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+
+button {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 0.35rem;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+button:hover {
+    background-color: var(--primary-dark);
+    transform: translateY(-1px);
+}
+
+#today-btn {
+    background-color: var(--secondary-color);
+    color: var(--text-color);
+}
+
+#today-btn:hover {
+    background-color: var(--light-gray);
+    transform: translateY(-1px);
+}
+
+.view-options {
+    display: flex;
+    background-color: var(--secondary-color);
+    border-radius: 0.35rem;
+    overflow: hidden;
+}
+
+.view-option {
+    background-color: transparent;
+    color: var(--text-color);
+    border-radius: 0;
+    padding: 0.5rem 1.25rem;
+}
+
+.view-option.active {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.view-option:not(.active):hover {
+    background-color: var(--light-gray);
+}
+
+.date-navigation {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.date-navigation h2 {
+    font-size: 1.25rem;
+    min-width: 120px;
+    text-align: center;
+}
+
+.date-navigation button {
+    padding: 0.5rem;
+    width: 2.5rem;
+    height: 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.app-main {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    padding: 1.5rem;
+    gap: 1.5rem;
+}
+
+.calendar-view {
+    flex: 1;
+    min-width: 0;
+    background-color: white;
+    border-radius: 0.35rem;
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1);
+    padding: 1.5rem;
+    overflow: auto;
+}
+
+.sidebar {
+    width: 400px;
+    background-color: white;
+    border-radius: 0.35rem;
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.sidebar-header h3 {
+    font-size: 1.1rem;
+    color: var(--text-color);
+}
+
+#add-event-btn {
+    padding: 0.5rem;
+    height: 2.5rem;
+    width: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.events-list {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.event-item {
+    padding: 1rem;
+    border-left: 4px solid var(--primary-color);
+    background-color: var(--secondary-color);
+    border-radius: 0.35rem;
+    margin-bottom: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.event-item:hover {
+    transform: translateX(5px);
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.event-title {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.event-time {
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+.event-description {
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Month View */
+.month-view {
+    width: 100%;
+}
+
+.month-header {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.month-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.5rem;
+}
+
+.day-header {
+    padding: 0.5rem;
+    text-align: center;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.day-cell {
+    aspect-ratio: 1;
+    min-width: 0;
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.35rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+}
+
+.day-cell:hover {
+    background-color: var(--secondary-color);
+}
+
+.day-number {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.day-events {
+    overflow-y: auto;
+    max-height: calc(100% - 1.5rem);
+}
+
+.day-event {
+    font-size: 0.75rem;
+    padding: 0.15rem 0.25rem;
+    border-radius: 0.15rem;
+    margin-bottom: 0.15rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: white;
+}
+
+.other-month {
+    opacity: 0.5;
+    background-color: var(--secondary-color);
+}
+
+.current-day {
+    background-color: rgba(78, 115, 223, 0.1);
+    border-color: var(--primary-color);
+}
+
+/* Week View */
+.week-view {
+    width: 100%;
+}
+
+.week-header {
+    display: grid;
+    grid-template-columns: 80px repeat(7, 1fr);
+    margin-bottom: 1rem;
+}
+
+.week-day-header {
+    text-align: center;
+    font-weight: 600;
+    padding: 0.5rem;
+}
+
+.week-day-header.current-day {
+    color: var(--primary-color);
+}
+
+.week-grid {
+    display: grid;
+    grid-template-columns: 80px repeat(7, 1fr);
+    grid-template-rows: repeat(24, 60px);
+}
+
+.hour-label {
+    font-size: 0.8rem;
+    color: #6c757d;
+    text-align: right;
+    padding-right: 0.5rem;
+    position: relative;
+    top: -0.5rem;
+}
+
+.week-cell {
+    border-top: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-color);
+    position: relative;
+}
+
+.week-cell:last-child {
+    border-right: none;
+}
+
+.week-event {
+    position: absolute;
+    left: 0.25rem;
+    right: 0.25rem;
+    padding: 0.25rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    color: white;
+    overflow: hidden;
+    z-index: 1;
+    cursor: pointer;
+}
+
+/* Day View */
+.day-view {
+    width: 100%;
+}
+
+.day-grid {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    grid-template-rows: repeat(24, 60px);
+}
+
+.day-hour {
+    border-top: 1px solid var(--border-color);
+    position: relative;
+}
+
+.day-hour-label {
+    font-size: 0.8rem;
+    color: #6c757d;
+    text-align: right;
+    padding-right: 0.5rem;
+    position: relative;
+    top: -0.5rem;
+}
+
+.day-time-block {
+    border-top: 1px solid var(--border-color);
+    position: relative;
+}
+
+.day-event {
+    position: absolute;
+    left: 0.25rem;
+    right: 0.25rem;
+    padding: 0.25rem;
+    border-radius: 0.25rem;
+    font-size: 0.9rem;
+    color: white;
+    overflow: hidden;
+    z-index: 1;
+    cursor: pointer;
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 100;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background-color: white;
+    padding: 2rem;
+    border-radius: 0.35rem;
+    width: 100%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+}
+
+.close-btn {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #6c757d;
+}
+
+.close-btn:hover {
+    color: var(--text-color);
+}
+
+.form-group {
+    margin-bottom: 1.25rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.35rem;
+    font-size: 1rem;
+}
+
+.form-group textarea {
+    resize: vertical;
+}
+
+.time-group {
+    display: flex;
+    gap: 1rem;
+}
+
+.time-group>div {
+    flex: 1;
+}
+
+.save-btn {
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 1rem;
+    margin-top: 1rem;
+}
+
+.event-details {
+    margin: 1.5rem 0;
+}
+
+.event-details p {
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.event-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
+#delete-event-btn {
+    background-color: var(--danger-color);
+}
+
+#edit-event-btn {
+    background-color: var(--warning-color);
+}
+
+
+/* =====================================================================
+   FITUR TAMBAHAN: tanggal merah, huruf A, piket, hari ini, tema gelap, backup
+   ===================================================================== */
+
+/* Tanggal merah (Minggu & hari libur nasional) */
+.red-text {
+    color: var(--danger-color) !important;
+}
+
+.day-cell.red-date .day-number {
+    color: var(--danger-color);
+}
+
+.day-cell.red-date {
+    background-color: rgba(231, 74, 59, 0.05);
+}
+
+.day-cell.other-month.red-date {
+    background-color: var(--secondary-color);
+}
+
+.week-cell.red-bg {
+    background-color: rgba(231, 74, 59, 0.05);
+}
+
+.holiday-label {
+    font-size: 0.65rem;
+    line-height: 1.15;
+    color: var(--danger-color);
+    font-weight: 600;
+    margin-bottom: 0.2rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.holiday-banner {
+    margin-top: 0.25rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--danger-color);
+}
+
+/* Logo kecil huruf "A" */
+.a-badge {
+    position: absolute;
+    top: 0.3rem;
+    right: 0.3rem;
+    width: 1.15rem;
+    height: 1.15rem;
+    border-radius: 50%;
+    background-color: var(--success-color);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+.a-badge.inline {
+    position: static;
+    display: inline-flex;
+    margin-top: 0.25rem;
+}
+
+/* Event di tampilan bulan tidak boleh absolute (class .day-event dipakai bersama day view) */
+.day-event.month-event {
+    position: static;
+    font-size: 0.75rem;
+    padding: 0.15rem 0.25rem;
+    cursor: pointer;
+}
+
+/* Jadwal piket malam (00.00 - 06.00) */
+.piket-event {
+    position: absolute;
+    top: 0;
+    left: 0.25rem;
+    right: 0.25rem;
+    height: 118px;
+    /* 2 jam x 60px */
+    padding: 0.35rem 0.4rem;
+    border-radius: 0.25rem;
+    background-color: #6f42c1;
+    color: white;
+    font-size: 0.8rem;
+    line-height: 1.3;
+    overflow: hidden;
+    z-index: 1;
+}
+
+.week-cell .piket-event {
+    font-size: 0.72rem;
+}
+
+/* Penanda piket dini hari di tampilan bulan */
+.piket-badge {
+    position: absolute;
+    top: 0.3rem;
+    right: 1.65rem;
+    width: 1.15rem;
+    height: 1.15rem;
+    border-radius: 50%;
+    background-color: #6f42c1;
+    font-size: 0.65rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+/* ===== Penanda HARI INI ===== */
+.day-cell.current-day {
+    border: 2px solid var(--primary-color);
+    background-color: rgba(78, 115, 223, 0.12);
+    box-shadow: 0 0 0 3px rgba(78, 115, 223, 0.2);
+}
+
+.day-cell.current-day .day-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.6rem;
+    height: 1.6rem;
+    border-radius: 50%;
+    background-color: var(--primary-color);
+    color: white;
+}
+
+/* Cap "HARI INI" */
+.today-stamp {
+    position: absolute;
+    bottom: 0.3rem;
+    right: 0.3rem;
+    padding: 0.05rem 0.3rem;
+    border: 1.5px solid var(--primary-color);
+    border-radius: 0.25rem;
+    background-color: white;
+    color: var(--primary-color);
+    font-size: 0.55rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    line-height: 1.3;
+    transform: rotate(-8deg);
+    pointer-events: none;
+    z-index: 2;
+}
+
+/* Tampilan minggu */
+.week-day-header.current-day>div:nth-child(2) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    margin: 0.1rem auto;
+    border-radius: 50%;
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.week-day-header .today-stamp {
+    position: static;
+    display: inline-block;
+    margin-top: 0.25rem;
+    transform: rotate(-4deg);
+}
+
+/* Tampilan hari */
+.today-pill {
+    display: inline-block;
+    margin-top: 0.35rem;
+    padding: 0.2rem 0.75rem;
+    border-radius: 999px;
+    background-color: var(--primary-color);
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+/* Status pemuatan hari libur */
+.holiday-status {
+    font-size: 0.7rem;
+    color: var(--danger-color);
+    font-weight: 600;
+}
+
+/* ===== Mode terang / gelap ===== */
+:root {
+    --card-bg: #ffffff;
+}
+
+[data-theme="dark"] {
+    color-scheme: dark;
+    --card-bg: #1e2238;
+    --secondary-color: #262b47;
+    --text-color: #d8dbec;
+    --light-gray: #3b4268;
+    --border-color: #343a5c;
+    --primary-color: #5b7fe8;
+    --primary-dark: #4a6bd0;
+}
+
+[data-theme="dark"] body {
+    background-color: #141725;
+}
+
+[data-theme="dark"] .app-header,
+[data-theme="dark"] .calendar-view,
+[data-theme="dark"] .sidebar,
+[data-theme="dark"] .modal-content,
+[data-theme="dark"] .today-stamp {
+    background-color: var(--card-bg);
+}
+
+[data-theme="dark"] .app-container {
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="dark"] .event-time,
+[data-theme="dark"] .hour-label,
+[data-theme="dark"] .day-hour-label,
+[data-theme="dark"] .close-btn {
+    color: #98a0c4;
+}
+
+[data-theme="dark"] .day-cell.current-day {
+    background-color: rgba(91, 127, 232, 0.2);
+    box-shadow: 0 0 0 3px rgba(91, 127, 232, 0.3);
+}
+
+[data-theme="dark"] .day-cell.red-date {
+    background-color: rgba(231, 74, 59, 0.1);
+}
+
+[data-theme="dark"] .day-cell.other-month.red-date {
+    background-color: var(--secondary-color);
+}
+
+[data-theme="dark"] .week-cell.red-bg {
+    background-color: rgba(231, 74, 59, 0.1);
+}
+
+/* Form di mode gelap */
+.form-group input,
+.form-group textarea,
+.form-group select {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+}
+
+/* Tombol ganti tema */
+#theme-toggle {
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background-color: var(--secondary-color);
+    color: #5a5c8f;
+    font-size: 1.05rem;
+}
+
+#theme-toggle:hover {
+    background-color: var(--light-gray);
+}
+
+[data-theme="dark"] #theme-toggle {
+    color: var(--warning-color);
+}
+
+/* Peralihan halus antar tema */
+body,
+.app-header,
+.calendar-view,
+.sidebar,
+.modal-content,
+.day-cell,
+.event-item,
+#theme-toggle {
+    transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+}
+
+/* Daftar acara boleh menyusut agar panel backup tetap terlihat */
+.events-list {
+    min-height: 0;
+}
+
+/* ===== Backup & Restore ===== */
+.backup-panel {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.backup-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.backup-buttons button {
+    flex: 1;
+    background-color: var(--secondary-color);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    font-size: 0.85rem;
+}
+
+.backup-buttons button:hover {
+    background-color: var(--light-gray);
+}
+
+.backup-status {
+    margin-top: 0.5rem;
+    font-size: 0.78rem;
+    color: var(--success-color);
+    font-weight: 600;
+    min-height: 1rem;
+}
+
+.backup-status.error {
+    color: var(--danger-color);
+}
+
+
+/* =====================================================================
+   ALARM: popup, panel nada, pilihan alarm di form
+   ===================================================================== */
+.alarm-group {
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    background-color: var(--secondary-color);
+}
+
+.alarm-check {
+    display: flex !important;
+    align-items: center;
+    gap: 0.6rem;
+    cursor: pointer;
+}
+
+.alarm-check input[type="checkbox"] {
+    width: 1.2rem;
+    height: 1.2rem;
+    accent-color: var(--primary-color);
+}
+
+.alarm-group select {
+    margin-top: 0.6rem;
+}
+
+/* Panel pengaturan nada di sidebar */
+.alarm-panel {
+    margin-top: 1rem;
+    padding: 0.9rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    background-color: var(--secondary-color);
+}
+
+.alarm-panel-title {
+    font-weight: 700;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.alarm-sound-name {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.6rem;
+    border-radius: 0.35rem;
+    background-color: var(--card-bg);
+    border: 1px dashed var(--border-color);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Tombol panel nada: 2 x 2 */
+.alarm-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.4rem;
+    margin-top: 0.6rem;
+}
+
+.alarm-buttons button,
+.notif-btn {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    font-size: 0.8rem;
+    padding: 0.5rem 0.4rem;
+}
+
+.alarm-buttons button:hover,
+.notif-btn:hover:not(:disabled) {
+    background-color: var(--light-gray);
+}
+
+.notif-btn {
+    width: 100%;
+    margin-top: 0.6rem;
+}
+
+.notif-btn:disabled {
+    opacity: 0.7;
+    cursor: default;
+    transform: none;
+}
+
+.volume-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 0.7rem;
+    font-size: 0.85rem;
+}
+
+.volume-row input {
+    flex: 1;
+    accent-color: var(--primary-color);
+}
+
+.alarm-status {
+    margin-top: 0.5rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--success-color);
+    min-height: 1rem;
+}
+
+.alarm-status.error {
+    color: var(--danger-color);
+}
+
+.alarm-hint {
+    margin-top: 0.3rem;
+    font-size: 0.72rem;
+    opacity: 0.7;
+}
+
+/* Popup alarm */
+.alarm-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: rgba(10, 12, 28, 0.65);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    animation: alarmFade 0.25s ease;
+}
+
+.alarm-overlay[hidden] {
+    display: none;
+}
+
+.alarm-card {
+    --alarm-color: var(--primary-color);
+    position: relative;
+    width: 100%;
+    max-width: 420px;
+    padding: 2rem 1.5rem 1.5rem;
+    border-radius: 1.25rem;
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    text-align: center;
+    overflow: hidden;
+    box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.45);
+    animation: alarmPop 0.4s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+
+.alarm-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 0.5rem;
+    background-color: var(--alarm-color);
+}
+
+.alarm-bell-wrap {
+    position: relative;
+    width: 5.5rem;
+    height: 5.5rem;
+    margin: 0 auto 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.alarm-bell-wrap::before,
+.alarm-bell-wrap::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background-color: var(--alarm-color);
+    opacity: 0.25;
+    animation: alarmPulse 1.8s ease-out infinite;
+}
+
+.alarm-bell-wrap::after {
+    animation-delay: 0.9s;
+}
+
+.alarm-bell {
+    position: relative;
+    z-index: 1;
+    font-size: 3rem;
+    line-height: 1;
+    transform-origin: 50% 10%;
+    animation: alarmRing 1s ease-in-out infinite;
+}
+
+.alarm-when {
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--alarm-color);
+}
+
+.alarm-title {
+    margin: 0.4rem 0;
+    font-size: 1.6rem;
+    line-height: 1.25;
+    word-break: break-word;
+}
+
+.alarm-time {
+    font-size: 0.95rem;
+    opacity: 0.85;
+}
+
+.alarm-desc {
+    margin-top: 0.75rem;
+    max-height: 5rem;
+    overflow-y: auto;
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.alarm-desc[hidden] {
+    display: none;
+}
+
+.alarm-queue {
+    margin-top: 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--danger-color);
+}
+
+.alarm-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+}
+
+.alarm-actions button {
+    flex: 1;
+    min-height: 3rem;
+    padding: 0.9rem 0.5rem;
+    border-radius: 0.75rem;
+    font-size: 1rem;
+}
+
+#alarm-snooze {
+    background-color: var(--secondary-color);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+}
+
+#alarm-snooze:hover {
+    background-color: var(--light-gray);
+}
+
+#alarm-dismiss {
+    background-color: var(--alarm-color);
+    color: #fff;
+}
+
+@keyframes alarmFade {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes alarmPop {
+    from {
+        opacity: 0;
+        transform: scale(0.8) translateY(1.5rem);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+@keyframes alarmRing {
+
+    0%,
+    100% {
+        transform: rotate(0);
+    }
+
+    10% {
+        transform: rotate(18deg);
+    }
+
+    20% {
+        transform: rotate(-16deg);
+    }
+
+    30% {
+        transform: rotate(14deg);
+    }
+
+    40% {
+        transform: rotate(-12deg);
+    }
+
+    50% {
+        transform: rotate(8deg);
+    }
+
+    60% {
+        transform: rotate(-6deg);
+    }
+
+    70% {
+        transform: rotate(0);
+    }
+}
+
+@keyframes alarmPulse {
+    0% {
+        transform: scale(0.6);
+        opacity: 0.35;
+    }
+
+    100% {
+        transform: scale(1.5);
+        opacity: 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    .alarm-bell,
+    .alarm-bell-wrap::before,
+    .alarm-bell-wrap::after,
+    .alarm-card,
+    .alarm-overlay {
+        animation: none;
+    }
+}
+
+
+/* Editor nada dering */
+.ringtone-content {
+    max-width: 520px;
+}
+
+.rt-file {
+    margin: 0.25rem 0 0.9rem;
+    padding: 0.4rem 0.7rem;
+    border: 1px dashed var(--border-color);
+    border-radius: 0.4rem;
+    background-color: var(--secondary-color);
+    font-size: 0.9rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.rt-wave-wrap {
+    position: relative;
+    border-radius: 0.5rem;
+    background-color: var(--secondary-color);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+}
+
+#rt-canvas {
+    display: block;
+    width: 100%;
+    height: 96px;
+}
+
+.rt-wave-msg {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 0.75rem;
+    text-align: center;
+    font-size: 0.8rem;
+    pointer-events: none;
+}
+
+.rt-wave-msg:empty {
+    display: none;
+}
+
+.rt-time-row {
+    display: flex;
+    justify-content: space-between;
+    margin: 0.35rem 0 0.9rem;
+    font-size: 0.78rem;
+    font-variant-numeric: tabular-nums;
+    opacity: 0.8;
+}
+
+.rt-range {
+    margin-bottom: 0.9rem;
+}
+
+.rt-range-head {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.3rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.rt-range-head b {
+    font-variant-numeric: tabular-nums;
+    color: var(--primary-color);
+}
+
+.rt-range input[type="range"] {
+    width: 100%;
+    accent-color: var(--primary-color);
+}
+
+.rt-mini {
+    margin-top: 0.3rem;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.75rem;
+    background-color: var(--secondary-color);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+}
+
+.rt-mini:hover:not(:disabled) {
+    background-color: var(--light-gray);
+}
+
+.rt-length {
+    padding: 0.5rem;
+    border-radius: 0.4rem;
+    background-color: rgba(78, 115, 223, 0.1);
+    text-align: center;
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+.rt-actions {
+    display: flex;
+    gap: 0.6rem;
+    margin-top: 1rem;
+}
+
+.rt-actions button {
+    flex: 1;
+    min-height: 2.8rem;
+    font-size: 0.95rem;
+}
+
+#rt-test {
+    background-color: var(--secondary-color);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+}
+
+#rt-test:hover:not(:disabled) {
+    background-color: var(--light-gray);
+}
+
+.ringtone-content button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.rt-hint {
+    margin-top: 0.8rem;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    opacity: 0.75;
+}
+
+/* =====================================================================
+   RESPONSIF / TAMPILAN HP (Android)
+   Bagian ini sengaja diletakkan paling akhir agar menimpa aturan di atasnya.
+   ===================================================================== */
+
+/* Layar sentuh: matikan efek hover yang "menempel" setelah ditap */
+@media (hover: none) {
+
+    button:hover,
+    #today-btn:hover,
+    .event-item:hover {
+        transform: none;
+    }
+}
+
+/* ---------- Tablet & HP (<= 992px) ---------- */
+@media (max-width: 992px) {
+
+    /* Biarkan halaman bisa di-scroll normal, jangan dikunci setinggi layar */
+    body {
+        height: auto;
+        min-height: 100vh;
+        min-height: 100dvh;
+        align-items: flex-start;
+    }
+
+    .app-container {
+        max-height: none;
+        min-height: 100vh;
+        min-height: 100dvh;
+        padding-bottom: env(safe-area-inset-bottom);
+        box-shadow: none;
+    }
+
+    .app-main {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+    }
+
+    .events-list {
+        max-height: 320px;
+    }
+}
+
+/* ---------- HP (<= 768px) ---------- */
+@media (max-width: 768px) {
+    .app-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+        padding: 0.85rem 1rem;
+    }
+
+    .app-header h1 {
+        font-size: 1.25rem;
+    }
+
+    .header-controls {
+        width: 100%;
+        gap: 0.6rem;
+        justify-content: space-between;
+    }
+
+    /* Baris 1: Hari Ini | Hari-Minggu-Bulan | tema.  Baris 2: navigasi tanggal */
+    .view-options {
+        flex: 1;
+    }
+
+    .view-option {
+        flex: 1;
+        padding: 0.55rem 0.4rem;
+        font-size: 0.9rem;
+    }
+
+    .date-navigation {
+        order: 3;
+        width: 100%;
+        justify-content: space-between;
+        gap: 0.5rem;
+    }
+
+    .date-navigation h2 {
+        flex: 1;
+        min-width: 0;
+        font-size: 1.05rem;
+    }
+
+    .date-navigation button {
+        width: 2.75rem;
+        height: 2.75rem;
+    }
+
+    #today-btn,
+    #theme-toggle {
+        min-height: 2.5rem;
+    }
+
+    .app-main {
+        padding: 0.75rem;
+        gap: 0.75rem;
+    }
+
+    .calendar-view,
+    .sidebar {
+        padding: 0.75rem;
+    }
+
+    .sidebar {
+        padding: 1rem;
+    }
+
+    .sidebar-header {
+        margin-bottom: 1rem;
+    }
+
+    /* Kalender boleh digeser ke samping bila perlu */
+    .calendar-view {
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Tampilan Minggu: 7 kolom tidak muat, jadi geser horizontal */
+    .week-view {
+        min-width: 640px;
+    }
+
+    .week-header,
+    .week-grid {
+        grid-template-columns: 48px repeat(7, 1fr);
+    }
+
+    .week-day-header {
+        padding: 0.25rem;
+        font-size: 0.78rem;
+    }
+
+    .hour-label,
+    .day-hour-label {
+        font-size: 0.65rem;
+        padding-right: 0.3rem;
+    }
+
+    .week-event {
+        font-size: 0.65rem;
+        padding: 0.15rem;
+    }
+
+    .week-cell .piket-event {
+        font-size: 0.62rem;
+        padding: 0.2rem;
+    }
+
+    /* Tampilan Hari */
+    .day-grid {
+        grid-template-columns: 48px 1fr;
+    }
+
+    .day-view .day-header h2 {
+        font-size: 1.05rem;
+    }
+
+    .day-event {
+        font-size: 0.8rem;
+    }
+
+    .piket-event {
+        font-size: 0.75rem;
+    }
+
+    /* Modal jadi "bottom sheet" yang nyaman dijangkau jempol */
+    .modal {
+        align-items: flex-end;
+    }
+
+    .modal-content {
+        max-width: 100%;
+        max-height: 92vh;
+        max-height: 92dvh;
+        border-radius: 1rem 1rem 0 0;
+        padding: 1.25rem 1.25rem calc(1.25rem + env(safe-area-inset-bottom));
+    }
+
+    .modal-content h2 {
+        font-size: 1.2rem;
+        padding-right: 2rem;
+        margin-bottom: 1rem;
+    }
+
+    .close-btn {
+        top: 0.6rem;
+        right: 0.9rem;
+        font-size: 1.8rem;
+        line-height: 1;
+        padding: 0.25rem;
+    }
+
+    /* 16px mencegah browser HP memperbesar layar otomatis saat mengetik */
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+        font-size: 16px;
+        padding: 0.65rem;
+    }
+
+    .event-actions {
+        flex-wrap: wrap;
+    }
+
+    .event-actions button {
+        flex: 1;
+        min-height: 2.6rem;
+    }
+}
+
+/* ---------- HP kecil (<= 576px) ---------- */
+@media (max-width: 576px) {
+    .time-group {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    /* --- Tampilan Bulan dibuat ringkas --- */
+    .month-header {
+        margin-bottom: 0.4rem;
+    }
+
+    .day-header {
+        padding: 0.25rem 0;
+        font-size: 0.72rem;
+    }
+
+    .month-days {
+        gap: 3px;
+    }
+
+    .day-cell {
+        aspect-ratio: auto;
+        min-height: 60px;
+        padding: 0.2rem;
+        border-radius: 0.3rem;
+    }
+
+    .day-number {
+        font-size: 0.8rem;
+        margin-bottom: 0.15rem;
+    }
+
+    .day-cell.current-day {
+        box-shadow: 0 0 0 1px rgba(78, 115, 223, 0.3);
+    }
+
+    .day-cell.current-day .day-number {
+        min-width: 1.4rem;
+        height: 1.4rem;
+        font-size: 0.75rem;
+    }
+
+    /* Cap "HARI INI" dan nama libur terlalu panjang untuk sel kecil */
+    .today-stamp,
+    .week-day-header .today-stamp,
+    .holiday-label {
+        display: none;
+    }
+
+    /* Tanda tanggal libur nasional diganti titik merah kecil (Minggu biasa tidak memilikinya) */
+    .day-cell.red-date[title]::after {
+        content: '';
+        position: absolute;
+        bottom: 0.25rem;
+        right: 0.25rem;
+        width: 0.4rem;
+        height: 0.4rem;
+        border-radius: 50%;
+        background-color: var(--danger-color);
+    }
+
+    .a-badge {
+        top: 0.2rem;
+        right: 0.2rem;
+        width: 0.95rem;
+        height: 0.95rem;
+        font-size: 0.55rem;
+    }
+
+    /* Ikon 🌙 dipindah ke pojok kiri bawah agar tidak menutupi angka tanggal */
+    .piket-badge {
+        top: auto;
+        right: auto;
+        bottom: 0.2rem;
+        left: 0.2rem;
+        width: 0.95rem;
+        height: 0.95rem;
+        font-size: 0.5rem;
+    }
+
+    /* Acara di sel bulan jadi titik berwarna; detailnya ada di tampilan Hari / sidebar */
+    .day-events {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2px;
+        overflow: visible;
+        max-height: none;
+    }
+
+    .day-event.month-event {
+        width: 0.5rem;
+        height: 0.5rem;
+        padding: 0;
+        margin: 0;
+        border-radius: 50%;
+        font-size: 0;
+    }
+}
