@@ -109,6 +109,8 @@ document.addEventListener('DOMContentLoaded', function() {
     let audioCtx = null;
     let customSound = null;                    // { name, url }
     let alarmVolume = 80;
+    let piketWho = localStorage.getItem('piketWho') || '';           // '' = mati, 'all' = semua, atau satu nama
+    let piketBefore = Number(localStorage.getItem('piketBefore')) || 0; // menit sebelum slot dimulai
     const baseTitle = document.title;
     let holidays = readHolidayCache();
 
@@ -120,6 +122,7 @@ document.addEventListener('DOMContentLoaded', function() {
         setupEventListeners();
         loadHolidays();
         initAlarms();
+        initPiketAlarm();
 
         // Tahun di footer mengikuti tahun berjalan
         const footerYear = document.getElementById('footer-year');
@@ -238,10 +241,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const k = Math.round((d - A_START) / 86400000) / A_INTERVAL; // putaran ke-k (0, 1, 2, ...)
         const group = k % 2 === 0 ? PIKET_GROUP_1 : PIKET_GROUP_2;
         const step = Math.floor(k / 2);
-        return PIKET_SLOTS.map((time, i) => ({
-            time,
-            names: group[(((i - step) % 3) + 3) % 3].join(' & ')
-        }));
+        return PIKET_SLOTS.map((time, i) => {
+            const people = group[(((i - step) % 3) + 3) % 3];
+            return { time, people, names: people.join(' & ') };
+        });
     }
 
     // Piket malam tanggal siklus (mis. 19) berlangsung pukul 00.00-06.00 pada keesokan harinya (20).
@@ -578,6 +581,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 triggerAlarm(ev);
             }
         });
+        if (checkPiketAlarms(now, fired)) changed = true;
         if (changed) writeJSON('alarmFired', fired);
 
         const snoozes = readJSON('alarmSnoozes', []);
@@ -586,11 +590,155 @@ document.addEventListener('DOMContentLoaded', function() {
             if (due.length) {
                 writeJSON('alarmSnoozes', snoozes.filter(sn => sn.at > now));
                 due.forEach(sn => {
-                    const ev = events.find(e => e.id === sn.id);
+                    const ev = events.find(e => e.id === sn.id) ||
+                        (String(sn.id).startsWith('piket-') ? makePiketEvent(Number(String(sn.id).slice(6))) : null);
                     if (ev) triggerAlarm(ev);
                 });
             }
         }
+    }
+
+    // ===== Alarm piket malam =====
+    // Jadwal piket dihitung dari siklus A (lihat getPiket). Alarm berbunyi di awal tiap slot
+    // (00.00, 02.00, 04.00) untuk nama yang dipilih, atau semua slot bila memilih "Semua orang".
+    function allPiketNames() {
+        return PIKET_GROUP_1.flat().concat(PIKET_GROUP_2.flat());
+    }
+
+    // Slot piket yang berawal dari kemarin sampai `days` hari ke depan
+    function piketSlots(fromDate, days) {
+        const out = [];
+        for (let off = -1; off <= days; off++) {
+            const cycle = new Date(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate() + off);
+            const piket = getPiket(cycle);
+            if (!piket) continue;
+            piket.forEach((slot, i) => {
+                out.push({
+                    startMs: new Date(cycle.getFullYear(), cycle.getMonth(), cycle.getDate() + 1, i * 2).getTime(),
+                    time: slot.time,
+                    names: slot.names,
+                    people: slot.people
+                });
+            });
+        }
+        return out;
+    }
+
+    function piketMatches(slot, who) {
+        return who === 'all' || slot.people.includes(who);
+    }
+
+    // Bentuk "acara" sementara supaya popup alarm yang sama bisa dipakai
+    function makePiketEvent(startMs) {
+        const start = new Date(startMs);
+        const cycle = new Date(start.getFullYear(), start.getMonth(), start.getDate() - 1);
+        const piket = getPiket(cycle);
+        const slot = piket && piket[Math.floor(start.getHours() / 2)];
+        if (!slot) return null;
+        return {
+            id: 'piket-' + startMs,
+            title: '🌙 Piket ' + slot.time,
+            startTime: start.toISOString(),
+            endTime: new Date(startMs + 2 * 3600000).toISOString(),
+            description: 'Bertugas: ' + slot.names,
+            color: '#6f42c1',
+            alarm: true,
+            alarmBefore: 0
+        };
+    }
+
+    function checkPiketAlarms(now, fired) {
+        if (!piketWho) return false;
+        let changed = false;
+        piketSlots(new Date(now), 1).forEach(slot => {
+            if (!piketMatches(slot, piketWho)) return;
+            const at = slot.startMs - piketBefore * 60000;
+            const key = 'piket-' + slot.startMs + '@' + at;
+            if (now >= at && now - at <= ALARM_CATCHUP_MS && !fired[key]) {
+                fired[key] = now;
+                changed = true;
+                const ev = makePiketEvent(slot.startMs);
+                if (ev) triggerAlarm(ev);
+            }
+        });
+        return changed;
+    }
+
+    // Saat pengaturan diubah, alarm yang waktunya sudah lewat tidak boleh langsung berbunyi
+    function markPiketPastFired() {
+        const now = Date.now();
+        const fired = getFired();
+        piketSlots(new Date(now), 1).forEach(slot => {
+            const at = slot.startMs - piketBefore * 60000;
+            if (at <= now) fired['piket-' + slot.startMs + '@' + at] = now;
+        });
+        writeJSON('alarmFired', fired);
+    }
+
+    function updatePiketNext() {
+        const el = document.getElementById('piket-next');
+        if (!el) return;
+        if (!piketWho) {
+            el.textContent = 'Alarm piket mati.';
+            return;
+        }
+        const now = Date.now();
+        const slot = piketSlots(new Date(now), 40).find(s => piketMatches(s, piketWho) && s.startMs + 2 * 3600000 > now);
+        if (!slot) {
+            el.textContent = 'Belum ada jadwal piket dalam 40 hari ke depan.';
+            return;
+        }
+        const d = new Date(slot.startMs);
+        el.textContent = (piketWho === 'all' ? 'Piket berikutnya: ' : 'Piket berikutnya untuk ' + piketWho + ': ') +
+            d.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short' }) +
+            ' • ' + slot.time + (piketWho === 'all' ? ' (' + slot.names + ')' : '');
+    }
+
+    function initPiketAlarm() {
+        const whoSel = document.getElementById('piket-who');
+        const beforeSel = document.getElementById('piket-before');
+        if (!whoSel || !beforeSel) return;
+
+        [['Grup 1', PIKET_GROUP_1], ['Grup 2', PIKET_GROUP_2]].forEach(([label, groups]) => {
+            const og = document.createElement('optgroup');
+            og.label = label;
+            groups.flat().forEach(name => {
+                const o = document.createElement('option');
+                o.value = name;
+                o.textContent = name;
+                og.appendChild(o);
+            });
+            whoSel.appendChild(og);
+        });
+
+        if (!['', 'all'].concat(allPiketNames()).includes(piketWho)) piketWho = '';
+        if (![0, 5, 10, 15, 30, 60].includes(piketBefore)) piketBefore = 0;
+        whoSel.value = piketWho;
+        beforeSel.value = String(piketBefore);
+
+        whoSel.addEventListener('change', () => {
+            piketWho = whoSel.value;
+            try { localStorage.setItem('piketWho', piketWho); } catch (e) {}
+            markPiketPastFired();
+            updatePiketNext();
+            // Izin notifikasi harus diminta dari aksi pengguna
+            if (piketWho && 'Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission().then(updateNotifButton).catch(() => {});
+            }
+            showAlarmStatus(piketWho
+                ? '✔ Alarm piket aktif untuk ' + (piketWho === 'all' ? 'semua orang' : piketWho) + '.'
+                : 'Alarm piket dimatikan.');
+        });
+
+        beforeSel.addEventListener('change', () => {
+            piketBefore = Number(beforeSel.value) || 0;
+            try { localStorage.setItem('piketBefore', String(piketBefore)); } catch (e) {}
+            markPiketPastFired();
+            updatePiketNext();
+        });
+
+        updatePiketNext();
+        setInterval(updatePiketNext, 60000);
     }
 
     function triggerAlarm(ev) {
