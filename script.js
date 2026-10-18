@@ -120,6 +120,10 @@ document.addEventListener('DOMContentLoaded', function() {
         setupEventListeners();
         loadHolidays();
         initAlarms();
+
+        // Tahun di footer mengikuti tahun berjalan
+        const footerYear = document.getElementById('footer-year');
+        if (footerYear) footerYear.textContent = new Date().getFullYear();
     }
 
     // ===== Hari libur nasional =====
