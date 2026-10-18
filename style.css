@@ -156,6 +156,8 @@ button:hover {
 
 .sidebar {
     width: 400px;
+    flex-shrink: 0;
+    overflow-y: auto;
     background-color: white;
     border-radius: 0.35rem;
     box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1);
@@ -186,7 +188,7 @@ button:hover {
 }
 
 .events-list {
-    flex: 1;
+    flex: 1 0 160px;
     overflow-y: auto;
 }
 
@@ -793,9 +795,14 @@ body,
     transition: background-color 0.3s, color 0.3s, border-color 0.3s;
 }
 
-/* Daftar acara boleh menyusut agar panel backup tetap terlihat */
+/* Daftar acara punya tinggi minimum; sidebar yang di-scroll bila panel di bawahnya tidak muat */
 .events-list {
-    min-height: 0;
+    min-height: 160px;
+}
+
+.alarm-panel,
+.backup-panel {
+    flex-shrink: 0;
 }
 
 /* ===== Backup & Restore ===== */
@@ -1315,6 +1322,112 @@ body,
 }
 
 /* =====================================================================
+   FOOTER
+   ===================================================================== */
+.app-footer {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.6rem 1.5rem;
+    padding: 0.8rem 2rem;
+    background-color: var(--card-bg);
+    border-top: 1px solid var(--border-color);
+    font-size: 0.85rem;
+    transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+}
+
+/* Quote (kiri bawah) */
+.footer-quote {
+    flex: 1 1 320px;
+    max-width: 620px;
+    padding-left: 0.8rem;
+    border-left: 3px solid var(--primary-color);
+    text-align: left;
+}
+
+.footer-quote p {
+    font-size: 0.88rem;
+    font-style: italic;
+    line-height: 1.45;
+}
+
+.footer-quote cite {
+    display: block;
+    margin-top: 0.2rem;
+    font-size: 0.78rem;
+    font-style: normal;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    color: var(--primary-color);
+}
+
+/* Nama & hak cipta (kanan bawah) */
+.footer-bottom {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    text-align: right;
+    gap: 0.15rem;
+    margin-left: auto;
+}
+
+.footer-credit {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.footer-heart {
+    color: var(--danger-color);
+    animation: footerBeat 1.6s ease-in-out infinite;
+}
+
+.footer-name {
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    background: linear-gradient(90deg, var(--primary-color), #6f42c1);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: var(--primary-color);
+}
+
+.footer-copy {
+    opacity: 0.7;
+    font-size: 0.8rem;
+}
+
+@keyframes footerBeat {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    15% {
+        transform: scale(1.25);
+    }
+
+    30% {
+        transform: scale(1);
+    }
+
+    45% {
+        transform: scale(1.18);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .footer-heart {
+        animation: none;
+    }
+}
+
+/* =====================================================================
    RESPONSIF / TAMPILAN HP (Android)
    Bagian ini sengaja diletakkan paling akhir agar menimpa aturan di atasnya.
    ===================================================================== */
@@ -1527,6 +1640,35 @@ body,
     .event-actions button {
         flex: 1;
         min-height: 2.6rem;
+    }
+
+    /* Footer ditumpuk dan rata tengah di HP */
+    /* Footer di HP: quote lalu nama, ditumpuk dan rata tengah */
+    .app-footer {
+        flex-direction: column;
+        justify-content: center;
+        padding: 0.9rem 1rem calc(0.8rem + env(safe-area-inset-bottom));
+    }
+
+    .footer-quote {
+        flex: 0 1 auto;
+        padding-left: 0;
+        border-left: 0;
+        text-align: center;
+    }
+
+    .footer-quote p {
+        font-size: 0.85rem;
+    }
+
+    .footer-bottom {
+        align-items: center;
+        text-align: center;
+        margin-left: 0;
+    }
+
+    .footer-credit {
+        justify-content: center;
     }
 }
 
