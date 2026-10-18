@@ -16,7 +16,8 @@
         })();
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css">
+    <!-- ?v=3 memaksa browser mengambil file terbaru. Naikkan angkanya (v=4, v=5, ...) setiap kali style.css / script.js diubah -->
+    <link rel="stylesheet" href="style.css?v=4">
 </head>
 
 <body>
@@ -71,6 +72,30 @@
                     <input type="file" id="alarm-file" accept="audio/*" hidden>
                     <div id="alarm-status" class="alarm-status"></div>
                     <div class="alarm-hint">Alarm hanya berbunyi selama kalender ini terbuka di browser.</div>
+                </div>
+                <div class="alarm-panel piket-panel">
+                    <div class="alarm-panel-title">🌙 Alarm Piket Malam</div>
+                    <label class="piket-row">
+                        <span>Siapa</span>
+                        <select id="piket-who">
+                            <option value="">Mati (tanpa alarm piket)</option>
+                            <option value="all">Semua orang</option>
+                        </select>
+                    </label>
+                    <label class="piket-row">
+                        <span>Ingatkan</span>
+                        <select id="piket-before">
+                            <option value="0">Tepat waktu</option>
+                            <option value="5">5 menit sebelumnya</option>
+                            <option value="10">10 menit sebelumnya</option>
+                            <option value="15">15 menit sebelumnya</option>
+                            <option value="30">30 menit sebelumnya</option>
+                            <option value="60">1 jam sebelumnya</option>
+                        </select>
+                    </label>
+                    <div id="piket-next" class="piket-next"></div>
+                    <div class="alarm-hint">Alarm berbunyi di awal tiap slot piket (00.00, 02.00, 04.00), selama
+                        kalender ini terbuka di browser.</div>
                 </div>
                 <div class="backup-panel">
                     <div class="backup-buttons">
@@ -234,7 +259,7 @@
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script src="script.js?v=4"></script>
 </body>
 
 </html>
