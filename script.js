@@ -111,6 +111,33 @@ document.addEventListener('DOMContentLoaded', function() {
     let alarmVolume = 80;
     let piketWho = localStorage.getItem('piketWho') || '';           // '' = mati, 'all' = semua, atau satu nama
     let piketBefore = Number(localStorage.getItem('piketBefore')) || 0; // menit sebelum slot dimulai
+
+    // Waktu solat. Sumber utama: MyQuran (jadwal resmi Kemenag RI, Kota Jakarta).
+    // Cadangan: Aladhan (metode 20 = Kemenag RI) memakai koordinat Semper Barat.
+    const PRAYER_PLACE = 'Semper Barat, Jakarta Utara';
+    const PRAYER_LAT = -6.1269;
+    const PRAYER_LNG = 106.9333;
+    const PRAYER_CITY_ID = 1301;               // KOTA JAKARTA di MyQuran
+    const PRAYER_CACHE_KEY = 'prayer_times_v1';
+    const PRAYERS = [
+        { key: 'subuh', name: 'Subuh', icon: '🌌' },
+        { key: 'dzuhur', name: 'Dzuhur', icon: '☀️' },
+        { key: 'ashar', name: 'Ashar', icon: '🌤️' },
+        { key: 'maghrib', name: 'Maghrib', icon: '🌇' },
+        { key: 'isya', name: 'Isya', icon: '🌙' }
+    ];
+    const PRAYER_DEFAULTS = {
+        master: true, sound: true, notif: true, before: 0, volume: 80,
+        on: { subuh: true, dzuhur: true, ashar: true, maghrib: true, isya: true }
+    };
+    let prayerSettings = readPrayerSettings();
+    let prayerTimes = readJSON(PRAYER_CACHE_KEY, {}); // { 'YYYY-MM-DD': { subuh: '04:13', ..., src: 'myquran' } }
+    let prayerSound = null;                           // { name, url, start, end }
+    let prayerViewDate = null;                        // tanggal yang sedang dilihat di popup (null = hari ini)
+    let prayerState = '';                             // '', 'loading', 'ok', 'fail'
+    let prayerLoading = false;
+    let prayerLastSig = '';
+
     const baseTitle = document.title;
     let holidays = readHolidayCache();
 
@@ -123,6 +150,7 @@ document.addEventListener('DOMContentLoaded', function() {
         loadHolidays();
         initAlarms();
         initPiketAlarm();
+        initPrayer();
 
         // Tahun di footer mengikuti tahun berjalan
         const footerYear = document.getElementById('footer-year');
@@ -409,21 +437,31 @@ document.addEventListener('DOMContentLoaded', function() {
         return `${m}:${r.toFixed(1).padStart(4, '0')}`;
     }
 
-    async function loadCustomSound() {
+    async function readSoundRecord(key, old) {
+        let next = null;
         try {
-            const rec = await idbRequest('readonly', store => store.get('alarmSound'));
-            if (customSound && customSound.url) URL.revokeObjectURL(customSound.url);
-            customSound = rec && rec.blob
-                ? { name: rec.name, url: URL.createObjectURL(rec.blob), start: rec.start || 0, end: rec.end || null }
-                : null;
-        } catch (e) {
-            customSound = null;
-        }
-        if (alarmSoundName) {
-            alarmSoundName.textContent = customSound
-                ? `🎵 ${customSound.name} (${fmtTime(customSound.start)} – ${customSound.end ? fmtTime(customSound.end) : 'akhir'})`
-                : '🎵 Nada bawaan (lonceng)';
-        }
+            const rec = await idbRequest('readonly', store => store.get(key));
+            if (rec && rec.blob) {
+                next = { name: rec.name, url: URL.createObjectURL(rec.blob), start: rec.start || 0, end: rec.end || null };
+            }
+        } catch (e) { /* tanpa IndexedDB: pakai nada bawaan */ }
+        if (old && old.url) URL.revokeObjectURL(old.url);
+        return next;
+    }
+
+    function soundLabel(snd, fallback) {
+        return snd
+            ? `🎵 ${snd.name} (${fmtTime(snd.start)} – ${snd.end ? fmtTime(snd.end) : 'akhir'})`
+            : fallback;
+    }
+
+    // Memuat nada alarm acara dan nada solat (disimpan terpisah)
+    async function loadCustomSound() {
+        customSound = await readSoundRecord('alarmSound', customSound);
+        prayerSound = await readSoundRecord('prayerSound', prayerSound);
+        if (alarmSoundName) alarmSoundName.textContent = soundLabel(customSound, '🎵 Nada bawaan (lonceng)');
+        const prayerName = document.getElementById('prayer-sound-name');
+        if (prayerName) prayerName.textContent = soundLabel(prayerSound, '🕌 Nada bawaan (lembut)');
     }
 
     function showAlarmStatus(message, isError) {
@@ -464,15 +502,22 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function updateTestButton() {
-        if (alarmTestBtn) alarmTestBtn.textContent = ringer && ringer.preview ? '⏹ Stop' : '▶ Coba';
+        const prayerPreview = !!(ringer && ringer.preview && ringer.kind === 'prayer');
+        if (alarmTestBtn) alarmTestBtn.textContent = ringer && ringer.preview && !prayerPreview ? '⏹ Stop' : '▶ Coba';
+        const prayerTest = document.getElementById('prayer-test-btn');
+        if (prayerTest) prayerTest.textContent = prayerPreview ? '⏹ Stop' : '▶ Coba';
     }
 
     // Menyalakan suara + getar. Berulang terus sampai alarm dimatikan / ditunda.
     function startSound() {
-        const volume = alarmVolume / 100;
+        const isPrayer = !!ringer && ringer.kind === 'prayer';
+        // Alarm solat dengan suara dimatikan: hanya popup/notifikasi (cuplikan "Coba" tetap berbunyi)
+        if (isPrayer && !prayerSettings.sound && !ringer.preview) return;
+        const volume = (isPrayer ? prayerSettings.volume : alarmVolume) / 100;
+        const snd = isPrayer ? prayerSound : customSound;
 
-        if (customSound) {
-            const { start, end, url } = customSound;
+        if (snd) {
+            const { start, end, url } = snd;
             const audio = new Audio(url);
             audio.volume = volume;
             try { audio.currentTime = start; } catch (e) {}
@@ -494,8 +539,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 showAlarmStatus('Browser menahan suara. Ketuk layar sekali agar lagu berbunyi.', true);
             });
         } else {
-            playChimeOnce(volume);
-            ringer.timer = setInterval(() => playChimeOnce(volume), 2200);
+            const chime = isPrayer ? playPrayerChimeOnce : playChimeOnce;
+            chime(volume);
+            ringer.timer = setInterval(() => chime(volume), isPrayer ? 4500 : 2200);
         }
 
         if (navigator.vibrate) {
@@ -522,9 +568,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // preview = true -> cuplikan singkat dari tombol "Coba" (otomatis berhenti setelah 8 detik);
     // selain itu alarm sungguhan: berbunyi terus sampai pengguna menekan Matikan / Tunda.
-    function startRinging(preview) {
+    function startRinging(preview, kind) {
         stopRinging();
-        ringer = { preview: !!preview };
+        ringer = { preview: !!preview, kind: kind || 'event' };
         startSound();
 
         if (preview) {
@@ -582,6 +628,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         if (checkPiketAlarms(now, fired)) changed = true;
+        if (checkPrayerAlarms(now, fired)) changed = true;
         if (changed) writeJSON('alarmFired', fired);
 
         const snoozes = readJSON('alarmSnoozes', []);
@@ -591,7 +638,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 writeJSON('alarmSnoozes', snoozes.filter(sn => sn.at > now));
                 due.forEach(sn => {
                     const ev = events.find(e => e.id === sn.id) ||
-                        (String(sn.id).startsWith('piket-') ? makePiketEvent(Number(String(sn.id).slice(6))) : null);
+                        (String(sn.id).startsWith('piket-') ? makePiketEvent(Number(String(sn.id).slice(6))) : null) ||
+                        (String(sn.id).startsWith('solat-') ? makePrayerEventById(String(sn.id)) : null);
                     if (ev) triggerAlarm(ev);
                 });
             }
@@ -741,6 +789,469 @@ document.addEventListener('DOMContentLoaded', function() {
         setInterval(updatePiketNext, 60000);
     }
 
+    // ===== Waktu solat 5 waktu =====
+    // Semua jam dari API adalah WIB. Waktu mutlak dihitung dengan offset +07:00,
+    // jadi alarm tetap tepat walaupun zona waktu perangkat berbeda.
+    function pad2(n) { return String(n).padStart(2, '0'); }
+    function wibKey(ms) { return new Date(ms + 7 * 3600000).toISOString().slice(0, 10); }
+    function shiftKey(key, days) {
+        const [y, m, d] = key.split('-').map(Number);
+        return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
+    }
+    function prayerEpoch(key, hhmm) { return new Date(key + 'T' + hhmm + ':00+07:00').getTime(); }
+    function isFridayKey(key) {
+        const [y, m, d] = key.split('-').map(Number);
+        return new Date(Date.UTC(y, m - 1, d)).getUTCDay() === 5;
+    }
+    function addMinutes(hhmm, n) {
+        const [h, m] = hhmm.split(':').map(Number);
+        const t = (h * 60 + m + n + 1440) % 1440;
+        return pad2(Math.floor(t / 60)) + ':' + pad2(t % 60);
+    }
+    function validTime(s) { return /^\d{2}:\d{2}$/.test(String(s)); }
+    function fmtHM(t) { return String(t).replace(':', '.'); }
+    function fmtCountdown(ms) {
+        const s = Math.max(0, Math.floor(ms / 1000));
+        return pad2(Math.floor(s / 3600)) + ':' + pad2(Math.floor((s % 3600) / 60)) + ':' + pad2(s % 60);
+    }
+    function prayerDateLabel(key, withYear) {
+        return new Date(key + 'T12:00:00+07:00').toLocaleDateString('id-ID', {
+            weekday: 'long', day: 'numeric', month: 'long', year: withYear ? 'numeric' : undefined, timeZone: 'Asia/Jakarta'
+        });
+    }
+
+    function readPrayerSettings() {
+        const saved = readJSON('prayerSettings', {});
+        const s = Object.assign({}, PRAYER_DEFAULTS, saved);
+        s.on = Object.assign({}, PRAYER_DEFAULTS.on, saved.on || {});
+        s.before = [0, 5, 10, 15, 30].includes(Number(s.before)) ? Number(s.before) : 0;
+        const v = Number(s.volume);
+        s.volume = v >= 0 && v <= 100 ? v : 80;
+        return s;
+    }
+
+    function savePrayerSettings() { writeJSON('prayerSettings', prayerSettings); }
+
+    function normalizeDay(raw) {
+        const day = {};
+        for (const p of PRAYERS) {
+            if (!validTime(raw[p.key])) return null;
+            day[p.key] = raw[p.key];
+        }
+        ['imsak', 'terbit', 'dhuha'].forEach(k => { day[k] = validTime(raw[k]) ? raw[k] : ''; });
+        day.src = raw.src;
+        return day;
+    }
+
+    function fetchJson(url) {
+        const ctrl = typeof AbortController === 'function' ? new AbortController() : null;
+        const timer = ctrl ? setTimeout(() => ctrl.abort(), 12000) : null;
+        return fetch(url, ctrl ? { signal: ctrl.signal } : undefined)
+            .then(res => {
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                return res.json();
+            })
+            .finally(() => { if (timer) clearTimeout(timer); });
+    }
+
+    // Sumber utama: jadwal resmi Kemenag RI lewat MyQuran (Kota Jakarta)
+    async function fetchMyQuran(y, m) {
+        const json = await fetchJson(`https://api.myquran.com/v2/sholat/jadwal/${PRAYER_CITY_ID}/${y}/${pad2(m)}`);
+        const list = json && json.data && json.data.jadwal;
+        if (!Array.isArray(list) || !list.length) throw new Error('Data kosong');
+        const out = {};
+        list.forEach(r => {
+            const day = normalizeDay({
+                imsak: r.imsak, subuh: r.subuh, terbit: r.terbit, dhuha: r.dhuha,
+                dzuhur: r.dzuhur, ashar: r.ashar, maghrib: r.maghrib, isya: r.isya, src: 'myquran'
+            });
+            if (day && /^\d{4}-\d{2}-\d{2}$/.test(r.date)) out[r.date] = day;
+        });
+        if (!Object.keys(out).length) throw new Error('Data tidak valid');
+        return out;
+    }
+
+    // Cadangan: Aladhan, metode 20 (Kemenag RI), koordinat Semper Barat
+    async function fetchAladhan(y, m) {
+        const json = await fetchJson(`https://api.aladhan.com/v1/calendar/${y}/${m}?latitude=${PRAYER_LAT}` +
+            `&longitude=${PRAYER_LNG}&method=20&timezonestring=Asia/Jakarta`);
+        if (!json || !Array.isArray(json.data) || !json.data.length) throw new Error('Data kosong');
+        const hm = s => String(s).slice(0, 5);
+        const out = {};
+        json.data.forEach(d => {
+            const [dd, mm, yy] = d.date.gregorian.date.split('-');
+            const t = d.timings;
+            const terbit = hm(t.Sunrise);
+            const day = normalizeDay({
+                imsak: hm(t.Imsak), subuh: hm(t.Fajr), terbit,
+                dhuha: validTime(terbit) ? addMinutes(terbit, 27) : '',
+                dzuhur: hm(t.Dhuhr), ashar: hm(t.Asr), maghrib: hm(t.Maghrib), isya: hm(t.Isha), src: 'aladhan'
+            });
+            if (day) out[`${yy}-${mm}-${dd}`] = day;
+        });
+        if (!Object.keys(out).length) throw new Error('Data tidak valid');
+        return out;
+    }
+
+    async function ensurePrayerMonth(y, m, force) {
+        const lastDay = new Date(Date.UTC(y, m, 0)).getUTCDate();
+        const lastKey = `${y}-${pad2(m)}-${pad2(lastDay)}`;
+        const have = prayerTimes[lastKey];
+        const sixHours = 6 * 3600000;
+        const retryMain = have && have.src !== 'myquran' &&
+            Date.now() - (Number(localStorage.getItem('prayerRetryAt')) || 0) > sixHours;
+        if (have && !force && !retryMain) return true;
+
+        for (const fetcher of [fetchMyQuran, fetchAladhan]) {
+            try {
+                const data = await fetcher(y, m);
+                Object.assign(prayerTimes, data);
+                if (fetcher === fetchAladhan) {
+                    try { localStorage.setItem('prayerRetryAt', String(Date.now())); } catch (e) {}
+                }
+                return true;
+            } catch (e) {
+                console.warn('Jadwal solat gagal:', fetcher.name, e);
+            }
+        }
+        return !!have;
+    }
+
+    async function loadPrayerTimes(force) {
+        if (prayerLoading) return false;
+        prayerLoading = true;
+        prayerState = 'loading';
+        renderPrayerAll();
+
+        const now = Date.now();
+        const [y, m] = wibKey(now).split('-').map(Number);
+        const ny = m === 12 ? y + 1 : y;
+        const nm = m === 12 ? 1 : m + 1;
+        const ok = await ensurePrayerMonth(y, m, force);
+        await ensurePrayerMonth(ny, nm, force);
+
+        const oldest = shiftKey(wibKey(now), -7);
+        Object.keys(prayerTimes).forEach(k => { if (k < oldest) delete prayerTimes[k]; });
+        try { localStorage.setItem(PRAYER_CACHE_KEY, JSON.stringify(prayerTimes)); } catch (e) {}
+
+        prayerState = ok && prayerTimes[wibKey(now)] ? 'ok' : 'fail';
+        prayerLoading = false;
+        renderPrayerAll();
+        return prayerState === 'ok';
+    }
+
+    function nextPrayer(now) {
+        const today = wibKey(now);
+        for (let off = 0; off <= 1; off++) {
+            const dateKey = shiftKey(today, off);
+            const day = prayerTimes[dateKey];
+            if (!day) continue;
+            for (const p of PRAYERS) {
+                const at = prayerEpoch(dateKey, day[p.key]);
+                if (at > now) return { key: p.key, name: p.name, dateKey, time: day[p.key], at };
+            }
+        }
+        return null;
+    }
+
+    function makePrayerEvent(dateKey, prayerKey) {
+        const day = prayerTimes[dateKey];
+        const p = PRAYERS.find(x => x.key === prayerKey);
+        if (!day || !p) return null;
+        const at = new Date(prayerEpoch(dateKey, day[prayerKey]));
+        const jumat = prayerKey === 'dzuhur' && isFridayKey(dateKey);
+        return {
+            id: `solat-${dateKey}-${prayerKey}`,
+            kind: 'prayer',
+            title: `🕌 Waktu ${p.name}${jumat ? ' (Jumat)' : ''}`,
+            startTime: at.toISOString(),
+            endTime: at.toISOString(),
+            description: `Saatnya menunaikan solat ${p.name}.`,
+            subtitle: `${prayerDateLabel(dateKey)} • ${fmtHM(day[prayerKey])} WIB • ${PRAYER_PLACE}`,
+            color: '#0f9d7a',
+            alarm: true,
+            alarmBefore: 0
+        };
+    }
+
+    function makePrayerEventById(id) {
+        // id: solat-YYYY-MM-DD-nama
+        return makePrayerEvent(id.slice(6, 16), id.slice(17));
+    }
+
+    function checkPrayerAlarms(now, fired) {
+        if (!prayerSettings.master) return false;
+        const dateKey = wibKey(now);
+        const day = prayerTimes[dateKey];
+        if (!day) return false;
+        let changed = false;
+        PRAYERS.forEach(p => {
+            if (!prayerSettings.on[p.key]) return;
+            const at = prayerEpoch(dateKey, day[p.key]) - prayerSettings.before * 60000;
+            const fk = `solat-${dateKey}-${p.key}@${at}`;
+            if (now >= at && now - at <= ALARM_CATCHUP_MS && !fired[fk]) {
+                fired[fk] = now;
+                changed = true;
+                const ev = makePrayerEvent(dateKey, p.key);
+                if (ev) triggerAlarm(ev);
+            }
+        });
+        return changed;
+    }
+
+    // Saat pengaturan diubah, alarm yang waktunya sudah lewat tidak boleh langsung berbunyi
+    function markPrayerPastFired() {
+        const now = Date.now();
+        const dateKey = wibKey(now);
+        const day = prayerTimes[dateKey];
+        if (!day) return;
+        const fired = getFired();
+        PRAYERS.forEach(p => {
+            const at = prayerEpoch(dateKey, day[p.key]) - prayerSettings.before * 60000;
+            if (at <= now) fired[`solat-${dateKey}-${p.key}@${at}`] = now;
+        });
+        writeJSON('alarmFired', fired);
+    }
+
+    // Nada bawaan solat: arpeggio lembut yang lebih pelan dari alarm acara
+    function playPrayerChimeOnce(volume) {
+        const ctx = getAudioCtx();
+        if (!ctx) return;
+        [523.25, 659.25, 783.99, 659.25, 523.25, 392].forEach((freq, i) => {
+            const t = ctx.currentTime + i * 0.55;
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0.0001, t);
+            gain.gain.exponentialRampToValueAtTime(Math.max(volume, 0.01) * 0.5, t + 0.08);
+            gain.gain.exponentialRampToValueAtTime(0.0001, t + 1.2);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(t);
+            osc.stop(t + 1.25);
+        });
+    }
+
+    function showPrayerStatus(message, isError) {
+        const el = document.getElementById('prayer-status');
+        if (!el) return;
+        el.textContent = message;
+        el.classList.toggle('error', !!isError);
+        clearTimeout(showPrayerStatus._t);
+        showPrayerStatus._t = setTimeout(() => { el.textContent = ''; }, 7000);
+    }
+
+    // --- Tampilan ---
+    function prayerSig(np) { return (np ? np.dateKey + np.key : 'none') + prayerState + (prayerViewDate || ''); }
+
+    function renderPrayerCountdown(np, now) {
+        const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+        set('prayer-card-count', np ? fmtCountdown(np.at - now) : '');
+        set('prayer-hero-count', np ? '⏳ ' + fmtCountdown(np.at - now) : '');
+    }
+
+    function renderPrayerAll() {
+        const now = Date.now();
+        const np = nextPrayer(now);
+        prayerLastSig = prayerSig(np);
+        const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+
+        let label;
+        if (np) {
+            const besok = np.dateKey !== wibKey(now);
+            const jumat = np.key === 'dzuhur' && isFridayKey(np.dateKey);
+            label = `Menuju ${np.name}${jumat ? ' (Jumat)' : ''}${besok ? ' besok' : ''}`;
+        } else if (prayerState === 'loading') {
+            label = 'Memuat jadwal…';
+        } else {
+            label = 'Jadwal belum tersedia';
+        }
+        set('prayer-card-label', label);
+        set('prayer-hero-label', label);
+        set('prayer-card-time', np ? fmtHM(np.time) : '--.--');
+        set('prayer-hero-time', np ? fmtHM(np.time) : '--.--');
+        renderPrayerCountdown(np, now);
+        renderPrayerModal(np, now);
+    }
+
+    function renderPrayerModal(np, now) {
+        const list = document.getElementById('prayer-list');
+        if (!list) return;
+        const todayKey = wibKey(now);
+        const viewKey = prayerViewDate || todayKey;
+        const day = prayerTimes[viewKey];
+
+        const dateEl = document.getElementById('prayer-date');
+        if (dateEl) dateEl.textContent = prayerDateLabel(viewKey, true) + (viewKey === todayKey ? ' • Hari ini' : '');
+        const prev = document.getElementById('prayer-nav-prev');
+        const next = document.getElementById('prayer-nav-next');
+        if (prev) prev.disabled = !prayerTimes[shiftKey(viewKey, -1)];
+        if (next) next.disabled = !prayerTimes[shiftKey(viewKey, 1)];
+        const todayBtn = document.getElementById('prayer-nav-today');
+        if (todayBtn) todayBtn.hidden = viewKey === todayKey;
+
+        list.classList.toggle('muted', !prayerSettings.master);
+
+        if (!day) {
+            list.innerHTML = '<li class="prayer-empty">' + (prayerState === 'loading'
+                ? 'Memuat jadwal solat…'
+                : 'Jadwal belum bisa dimuat. Periksa koneksi internet lalu tekan "Perbarui jadwal".') + '</li>';
+        } else {
+            list.innerHTML = PRAYERS.map(p => {
+                const at = prayerEpoch(viewKey, day[p.key]);
+                const passed = viewKey < todayKey || (viewKey === todayKey && at <= now);
+                const isNext = !!np && np.dateKey === viewKey && np.key === p.key;
+                const jumat = p.key === 'dzuhur' && isFridayKey(viewKey);
+                return `<li class="prayer-row${isNext ? ' next' : ''}${passed ? ' passed' : ''}">` +
+                    `<span class="prayer-icon">${p.icon}</span>` +
+                    `<span class="prayer-name">${p.name}${jumat ? '<small>Jumat</small>' : ''}</span>` +
+                    `<span class="prayer-time">${fmtHM(day[p.key])}</span>` +
+                    `<input type="checkbox" class="switch" data-prayer="${p.key}" aria-label="Alarm ${p.name}"` +
+                    `${prayerSettings.on[p.key] ? ' checked' : ''}></li>`;
+            }).join('');
+        }
+
+        const info = document.getElementById('prayer-info');
+        if (info) {
+            info.innerHTML = day
+                ? [['Imsak', day.imsak], ['Terbit', day.terbit], ['Dhuha', day.dhuha]]
+                    .filter(x => x[1]).map(x => `<span class="prayer-chip"><b>${x[0]}</b>${fmtHM(x[1])}</span>`).join('')
+                : '';
+        }
+
+        const src = document.getElementById('prayer-source');
+        if (src) {
+            if (!day) src.textContent = '';
+            else if (day.src === 'myquran') src.textContent = 'Sumber: jadwal resmi Kemenag RI (Kota Jakarta) lewat MyQuran. Semua waktu dalam WIB.';
+            else src.textContent = 'Sumber cadangan: Aladhan (metode Kemenag RI, koordinat ' + PRAYER_PLACE +
+                '). Hasil hitungan, bisa selisih 1–4 menit dari jadwal resmi. Semua waktu dalam WIB.';
+        }
+    }
+
+    function syncPrayerSettingsUI() {
+        const $ = id => document.getElementById(id);
+        if ($('prayer-master')) $('prayer-master').checked = !!prayerSettings.master;
+        if ($('prayer-sound-on')) $('prayer-sound-on').checked = !!prayerSettings.sound;
+        if ($('prayer-notif-on')) $('prayer-notif-on').checked = !!prayerSettings.notif;
+        if ($('prayer-before')) $('prayer-before').value = String(prayerSettings.before);
+        if ($('prayer-volume')) $('prayer-volume').value = String(prayerSettings.volume);
+    }
+
+    function prayerTick() {
+        const now = Date.now();
+        const np = nextPrayer(now);
+        if (prayerSig(np) !== prayerLastSig) renderPrayerAll();
+        else renderPrayerCountdown(np, now);
+    }
+
+    function initPrayer() {
+        const $ = id => document.getElementById(id);
+        const modal = $('prayer-modal');
+        if (!modal || !$('prayer-card')) return;
+
+        const askNotif = () => {
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission().then(updateNotifButton).catch(() => {});
+            }
+        };
+        const close = () => { modal.style.display = 'none'; };
+
+        $('prayer-detail-btn').addEventListener('click', () => {
+            prayerViewDate = null;
+            renderPrayerAll();
+            modal.style.display = 'flex';
+        });
+        $('prayer-close').addEventListener('click', close);
+        modal.addEventListener('click', e => { if (e.target === modal) close(); });
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape' && modal.style.display === 'flex' && rtModal.style.display !== 'flex') close();
+        });
+
+        // Pengaturan
+        syncPrayerSettingsUI();
+        $('prayer-master').addEventListener('change', e => {
+            prayerSettings.master = e.target.checked;
+            savePrayerSettings();
+            markPrayerPastFired();
+            if (prayerSettings.master) askNotif();
+            renderPrayerAll();
+        });
+        $('prayer-sound-on').addEventListener('change', e => {
+            prayerSettings.sound = e.target.checked;
+            savePrayerSettings();
+        });
+        $('prayer-notif-on').addEventListener('change', e => {
+            prayerSettings.notif = e.target.checked;
+            savePrayerSettings();
+            if (prayerSettings.notif) askNotif();
+        });
+        $('prayer-before').addEventListener('change', e => {
+            prayerSettings.before = Number(e.target.value) || 0;
+            savePrayerSettings();
+            markPrayerPastFired();
+        });
+        $('prayer-volume').addEventListener('input', e => {
+            prayerSettings.volume = Number(e.target.value);
+            savePrayerSettings();
+            if (ringer && ringer.audio && ringer.kind === 'prayer') ringer.audio.volume = prayerSettings.volume / 100;
+        });
+
+        // Saklar per waktu solat
+        $('prayer-list').addEventListener('change', e => {
+            const box = e.target.closest('input[data-prayer]');
+            if (!box) return;
+            prayerSettings.on[box.dataset.prayer] = box.checked;
+            savePrayerSettings();
+            markPrayerPastFired();
+            if (box.checked) askNotif();
+        });
+
+        // Pindah hari
+        $('prayer-nav-prev').addEventListener('click', () => {
+            prayerViewDate = shiftKey(prayerViewDate || wibKey(Date.now()), -1);
+            renderPrayerAll();
+        });
+        $('prayer-nav-next').addEventListener('click', () => {
+            prayerViewDate = shiftKey(prayerViewDate || wibKey(Date.now()), 1);
+            renderPrayerAll();
+        });
+        $('prayer-nav-today').addEventListener('click', () => {
+            prayerViewDate = null;
+            renderPrayerAll();
+        });
+
+        // Nada solat (terpisah dari nada alarm acara)
+        const fileInput = $('prayer-file');
+        $('prayer-pick-btn').addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', () => {
+            handleSoundFile(fileInput.files[0], 'prayerSound');
+            fileInput.value = '';
+        });
+        $('prayer-edit-btn').addEventListener('click', () => editSavedRingtone('prayerSound'));
+        $('prayer-test-btn').addEventListener('click', () => {
+            if (ringer && ringer.preview && ringer.kind === 'prayer') stopRinging();
+            else if (!ringer) startRinging(true, 'prayer');
+        });
+        $('prayer-reset-btn').addEventListener('click', async () => {
+            try { await idbRequest('readwrite', store => store.delete('prayerSound')); } catch (e) {}
+            await loadCustomSound();
+            showPrayerStatus('Kembali memakai nada bawaan solat.');
+        });
+
+        $('prayer-refresh').addEventListener('click', async () => {
+            showPrayerStatus('Memperbarui jadwal…');
+            const ok = await loadPrayerTimes(true);
+            showPrayerStatus(ok ? '✔ Jadwal solat diperbarui.' : 'Gagal memuat jadwal. Periksa koneksi internet.', !ok);
+        });
+
+        renderPrayerAll();
+        loadPrayerTimes(false);
+        setInterval(prayerTick, 1000);
+        setInterval(() => loadPrayerTimes(false), 6 * 3600000);
+        document.addEventListener('visibilitychange', () => { if (!document.hidden) loadPrayerTimes(false); });
+    }
+
     function triggerAlarm(ev) {
         if ((currentAlarm && currentAlarm.id === ev.id) || alarmQueue.some(a => a.id === ev.id)) return;
         alarmQueue.push(ev);
@@ -756,6 +1267,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function describeStart(ev) {
         const diff = Math.round((new Date(ev.startTime) - Date.now()) / 60000);
+        if (ev.kind === 'prayer') return diff > 0 ? `${diff} menit lagi menuju waktu solat` : 'Waktu solat telah tiba';
         if (diff > 0) return `Dimulai ${diff} menit lagi`;
         if (diff < 0) return `Dimulai ${-diff} menit lalu`;
         return 'Acara dimulai sekarang';
@@ -778,15 +1290,17 @@ document.addEventListener('DOMContentLoaded', function() {
         alarmCard.style.setProperty('--alarm-color', ev.color || '#4e73df');
         alarmWhenEl.textContent = describeStart(ev);
         alarmTitleEl.textContent = ev.title;
-        alarmTimeEl.textContent = start.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' }) +
-            ' • ' + formatTime(start) + ' - ' + formatTime(end);
+        alarmTimeEl.textContent = ev.kind === 'prayer'
+            ? ev.subtitle
+            : start.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' }) +
+                ' • ' + formatTime(start) + ' - ' + formatTime(end);
         alarmDescEl.textContent = ev.description || '';
         alarmDescEl.hidden = !ev.description;
         updateAlarmQueueLabel();
 
         alarmOverlay.hidden = false;
         document.title = '🔔 ' + ev.title;
-        startRinging();
+        startRinging(false, ev.kind);
     }
 
     function dismissAlarm() {
@@ -806,9 +1320,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Notifikasi sistem (tampil saat tab/aplikasi sedang di latar belakang)
     async function showSystemNotification(ev) {
         if (!('Notification' in window) || Notification.permission !== 'granted') return;
+        if (ev.kind === 'prayer' && !prayerSettings.notif) return;
         const start = new Date(ev.startTime);
         const options = {
-            body: describeStart(ev) + ' • ' + formatTime(start),
+            body: ev.kind === 'prayer'
+                ? describeStart(ev) + ' • ' + ev.subtitle
+                : describeStart(ev) + ' • ' + formatTime(start),
             tag: 'alarm-' + ev.id,
             requireInteraction: true,
             vibrate: [300, 150, 300, 150, 600]
@@ -849,7 +1366,7 @@ document.addEventListener('DOMContentLoaded', function() {
             /\.(mp3|wav|ogg|oga|m4a|aac|flac|opus|webm|amr)$/i.test(file.name || '');
     }
 
-    function handleSoundFile(file) {
+    function handleSoundFile(file, target) {
         if (!file) return;
         if (!isAudioFile(file)) {
             showAlarmStatus('File harus berupa audio (mp3, wav, ogg, m4a).', true);
@@ -859,17 +1376,19 @@ document.addEventListener('DOMContentLoaded', function() {
             showAlarmStatus(`Ukuran file maksimal ${ALARM_MAX_FILE_MB} MB.`, true);
             return;
         }
-        openRingtoneEditor(file, file.name, file.type, 0, null);
+        openRingtoneEditor(file, file.name, file.type, 0, null, target);
     }
 
-    async function editSavedRingtone() {
+    async function editSavedRingtone(target) {
+        const key = target || 'alarmSound';
         let rec = null;
-        try { rec = await idbRequest('readonly', store => store.get('alarmSound')); } catch (e) {}
+        try { rec = await idbRequest('readonly', store => store.get(key)); } catch (e) {}
         if (!rec || !rec.blob) {
-            showAlarmStatus('Belum ada lagu tersimpan. Tekan "Pilih lagu" dulu.', true);
+            const msg = 'Belum ada lagu tersimpan. Tekan "Pilih lagu" dulu.';
+            if (key === 'prayerSound') showPrayerStatus(msg, true); else showAlarmStatus(msg, true);
             return;
         }
-        openRingtoneEditor(rec.blob, rec.name, rec.type, rec.start || 0, rec.end || Infinity);
+        openRingtoneEditor(rec.blob, rec.name, rec.type, rec.start || 0, rec.end || Infinity, key);
     }
 
     function metadataDuration(url) {
@@ -930,11 +1449,11 @@ document.addEventListener('DOMContentLoaded', function() {
         [rtStart, rtEnd, rtSetStart, rtSetEnd, rtTestBtn, rtSaveBtn].forEach(el => { el.disabled = !on; });
     }
 
-    async function openRingtoneEditor(blob, name, type, start, end) {
+    async function openRingtoneEditor(blob, name, type, start, end, target) {
         closeRingtoneEditor();
         const url = URL.createObjectURL(blob);
         const token = {};
-        rt = { token, blob, name, type: type || blob.type || 'audio/mpeg', url, duration: 0, start: 0, end: 0, peaks: null, audio: null, lastTime: 0 };
+        rt = { token, target: target || 'alarmSound', blob, name, type: type || blob.type || 'audio/mpeg', url, duration: 0, start: 0, end: 0, peaks: null, audio: null, lastTime: 0 };
 
         rtFile.textContent = name;
         rtWaveMsg.textContent = 'Memuat lagu…';
@@ -1104,10 +1623,12 @@ document.addEventListener('DOMContentLoaded', function() {
             end: rt.end >= rt.duration - 0.05 ? null : rt.end
         };
         try {
-            await idbRequest('readwrite', store => store.put(record, 'alarmSound'));
+            const target = rt.target;
+            await idbRequest('readwrite', store => store.put(record, target));
             await loadCustomSound();
             closeRingtoneEditor();
-            showAlarmStatus('✔ Nada dering disimpan. Tekan "Coba" untuk mendengar hasilnya.');
+            const done = '✔ Nada dering disimpan. Tekan "Coba" untuk mendengar hasilnya.';
+            if (target === 'prayerSound') showPrayerStatus(done); else showAlarmStatus(done);
         } catch (e) {
             rtWaveMsg.textContent = 'Gagal menyimpan (penyimpanan browser penuh atau diblokir).';
         }
@@ -1159,7 +1680,7 @@ document.addEventListener('DOMContentLoaded', function() {
             alarmVolumeInput.addEventListener('input', () => {
                 alarmVolume = Number(alarmVolumeInput.value);
                 try { localStorage.setItem('alarmVolume', String(alarmVolume)); } catch (e) {}
-                if (ringer && ringer.audio) ringer.audio.volume = alarmVolume / 100;
+                if (ringer && ringer.audio && ringer.kind !== 'prayer') ringer.audio.volume = alarmVolume / 100;
             });
         }
 
