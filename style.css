@@ -1218,6 +1218,356 @@ body,
     color: var(--primary-color);
 }
 
+/* =====================================================================
+   WAKTU SOLAT: kartu sidebar, popup detail, saklar
+   ===================================================================== */
+.prayer-card {
+    flex-shrink: 0;
+    margin-top: 1rem;
+    padding: 1rem;
+    border-radius: 0.75rem;
+    color: #fff;
+    background:
+        radial-gradient(circle at 90% 0%, rgba(255, 255, 255, 0.18), transparent 55%),
+        linear-gradient(135deg, #0f9d7a, #0b6e8a);
+    box-shadow: 0 0.4rem 1.2rem rgba(11, 110, 138, 0.28);
+}
+
+.prayer-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.2rem 0.6rem;
+}
+
+.prayer-card-title {
+    font-weight: 800;
+    font-size: 0.95rem;
+}
+
+.prayer-card-place {
+    font-size: 0.72rem;
+    opacity: 0.85;
+}
+
+.prayer-card-next {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 0.75rem;
+    margin: 0.8rem 0;
+}
+
+.prayer-card-label {
+    font-size: 0.8rem;
+    opacity: 0.9;
+}
+
+.prayer-card-time {
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+}
+
+.prayer-card-count {
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+    background-color: rgba(255, 255, 255, 0.2);
+    font-size: 0.8rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.prayer-card-count:empty {
+    display: none;
+}
+
+.prayer-detail-btn {
+    width: 100%;
+    background-color: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    font-size: 0.85rem;
+}
+
+.prayer-detail-btn:hover {
+    background-color: rgba(255, 255, 255, 0.32);
+}
+
+/* Popup detail */
+.prayer-content {
+    max-width: 540px;
+}
+
+.prayer-hero {
+    padding: 1.2rem 1rem;
+    border-radius: 1rem;
+    text-align: center;
+    color: #fff;
+    background:
+        radial-gradient(circle at 15% 0%, rgba(255, 255, 255, 0.2), transparent 50%),
+        radial-gradient(circle at 100% 100%, rgba(255, 255, 255, 0.12), transparent 45%),
+        linear-gradient(135deg, #0f9d7a, #0b6e8a);
+    box-shadow: 0 0.5rem 1.4rem rgba(11, 110, 138, 0.3);
+}
+
+.prayer-hero-place {
+    font-size: 0.78rem;
+    opacity: 0.85;
+}
+
+.prayer-hero-label {
+    margin-top: 0.5rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.prayer-hero-time {
+    font-size: 3.2rem;
+    font-weight: 800;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+}
+
+.prayer-hero-count {
+    display: inline-block;
+    margin-top: 0.4rem;
+    padding: 0.3rem 0.9rem;
+    border-radius: 999px;
+    background-color: rgba(255, 255, 255, 0.2);
+    font-size: 0.95rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.prayer-hero-count:empty {
+    display: none;
+}
+
+.prayer-daynav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+    margin: 1rem 0 0.6rem;
+}
+
+.prayer-daynav button {
+    width: 2.4rem;
+    height: 2.4rem;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.prayer-daynav button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.prayer-daynav-date {
+    flex: 1;
+    text-align: center;
+    font-weight: 700;
+    font-size: 0.95rem;
+}
+
+.prayer-today-link {
+    display: block;
+    margin: 0 auto 0.6rem;
+    padding: 0.3rem 0.8rem;
+    font-size: 0.8rem;
+    background-color: var(--secondary-color);
+    color: var(--primary-color);
+    border: 1px solid var(--border-color);
+}
+
+.prayer-today-link[hidden] {
+    display: none;
+}
+
+.prayer-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
+.prayer-row {
+    display: grid;
+    grid-template-columns: 2rem 1fr auto auto;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.7rem 0.8rem;
+    border: 1px solid var(--border-color);
+    border-left: 4px solid var(--light-gray);
+    border-radius: 0.6rem;
+    background-color: var(--secondary-color);
+}
+
+.prayer-row.next {
+    border-color: #0f9d7a;
+    border-left-width: 4px;
+    background-color: rgba(15, 157, 122, 0.12);
+    box-shadow: 0 0 0 2px rgba(15, 157, 122, 0.18);
+}
+
+.prayer-row.passed .prayer-name,
+.prayer-row.passed .prayer-time {
+    opacity: 0.5;
+}
+
+.prayer-icon {
+    font-size: 1.4rem;
+    text-align: center;
+}
+
+.prayer-name {
+    font-weight: 700;
+}
+
+.prayer-name small {
+    margin-left: 0.4rem;
+    padding: 0.05rem 0.4rem;
+    border-radius: 999px;
+    background-color: rgba(15, 157, 122, 0.18);
+    color: #0f9d7a;
+    font-size: 0.65rem;
+    font-weight: 700;
+}
+
+.prayer-time {
+    font-size: 1.25rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+}
+
+.prayer-list.muted .prayer-row input.switch {
+    opacity: 0.5;
+}
+
+.prayer-empty {
+    padding: 1rem;
+    border: 1px dashed var(--border-color);
+    border-radius: 0.6rem;
+    text-align: center;
+    font-size: 0.85rem;
+}
+
+.prayer-info {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.7rem;
+}
+
+.prayer-chip {
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+    border: 1px solid var(--border-color);
+    background-color: var(--secondary-color);
+    font-size: 0.78rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.prayer-chip b {
+    margin-right: 0.25rem;
+    font-weight: 700;
+}
+
+.prayer-source {
+    margin-top: 0.7rem;
+    font-size: 0.72rem;
+    line-height: 1.4;
+    opacity: 0.75;
+}
+
+.prayer-settings {
+    margin-top: 1.2rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.prayer-settings h3 {
+    margin-bottom: 0.4rem;
+    font-size: 1rem;
+}
+
+.prayer-sound-title {
+    margin-top: 0.9rem;
+}
+
+.prayer-settings .notif-btn {
+    margin-top: 0.8rem;
+}
+
+/* Saklar */
+.switch-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.8rem;
+    padding: 0.6rem 0;
+    border-bottom: 1px dashed var(--border-color);
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+input.switch {
+    -webkit-appearance: none;
+    appearance: none;
+    flex: 0 0 auto;
+    position: relative;
+    width: 2.6rem;
+    height: 1.5rem;
+    border: 0;
+    border-radius: 999px;
+    background-color: var(--light-gray);
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+input.switch::after {
+    content: '';
+    position: absolute;
+    top: 0.15rem;
+    left: 0.15rem;
+    width: 1.2rem;
+    height: 1.2rem;
+    border-radius: 50%;
+    background-color: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+    transition: transform 0.2s;
+}
+
+input.switch:checked {
+    background-color: var(--success-color);
+}
+
+input.switch:checked::after {
+    transform: translateX(1.1rem);
+}
+
+input.switch:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+@media (max-width: 768px) {
+    .prayer-hero-time {
+        font-size: 2.7rem;
+    }
+
+    .prayer-row {
+        gap: 0.5rem;
+        padding: 0.65rem 0.6rem;
+    }
+}
+
 /* Editor nada dering */
 .ringtone-content {
     max-width: 520px;
