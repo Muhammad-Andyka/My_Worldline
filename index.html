@@ -17,7 +17,7 @@
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- ?v=3 memaksa browser mengambil file terbaru. Naikkan angkanya (v=4, v=5, ...) setiap kali style.css / script.js diubah -->
-    <link rel="stylesheet" href="style.css?v=4">
+    <link rel="stylesheet" href="style.css?v=5">
 </head>
 
 <body>
@@ -54,6 +54,21 @@
                 </div>
                 <div class="events-list" id="events-list">
                     <!-- Daftar acara ditampilkan di sini -->
+                </div>
+                <div class="prayer-card" id="prayer-card">
+                    <div class="prayer-card-top">
+                        <div class="prayer-card-title">🕌 Waktu Solat</div>
+                        <div class="prayer-card-place">📍 Semper Barat, Jakarta Utara</div>
+                    </div>
+                    <div class="prayer-card-next">
+                        <div>
+                            <div class="prayer-card-label" id="prayer-card-label">Memuat jadwal…</div>
+                            <div class="prayer-card-time" id="prayer-card-time">--.--</div>
+                        </div>
+                        <div class="prayer-card-count" id="prayer-card-count"></div>
+                    </div>
+                    <button type="button" id="prayer-detail-btn" class="prayer-detail-btn">📖 Detail &amp;
+                        pengaturan</button>
                 </div>
                 <div class="alarm-panel">
                     <div class="alarm-panel-title">🔔 Nada Alarm</div>
@@ -203,6 +218,68 @@
         </div>
     </div>
 
+    <!-- Detail jadwal solat + pengaturan alarm solat -->
+    <div class="modal" id="prayer-modal">
+        <div class="modal-content prayer-content">
+            <span class="close-btn" id="prayer-close">&times;</span>
+            <h2>🕌 Jadwal Solat</h2>
+
+            <div class="prayer-hero">
+                <div class="prayer-hero-place">📍 Semper Barat, Jakarta Utara</div>
+                <div class="prayer-hero-label" id="prayer-hero-label">Memuat jadwal…</div>
+                <div class="prayer-hero-time" id="prayer-hero-time">--.--</div>
+                <div class="prayer-hero-count" id="prayer-hero-count"></div>
+            </div>
+
+            <div class="prayer-daynav">
+                <button type="button" id="prayer-nav-prev" aria-label="Hari sebelumnya"><i
+                        class="fas fa-chevron-left"></i></button>
+                <div class="prayer-daynav-date" id="prayer-date">-</div>
+                <button type="button" id="prayer-nav-next" aria-label="Hari berikutnya"><i
+                        class="fas fa-chevron-right"></i></button>
+            </div>
+            <button type="button" id="prayer-nav-today" class="prayer-today-link" hidden>↩ Kembali ke hari ini</button>
+
+            <ul class="prayer-list" id="prayer-list"></ul>
+            <div class="prayer-info" id="prayer-info"></div>
+            <div class="prayer-source" id="prayer-source"></div>
+
+            <div class="prayer-settings">
+                <h3>⚙ Pengaturan alarm solat</h3>
+                <label class="switch-row"><span>Aktifkan alarm solat</span>
+                    <input type="checkbox" class="switch" id="prayer-master"></label>
+                <label class="switch-row"><span>🔊 Bunyikan suara</span>
+                    <input type="checkbox" class="switch" id="prayer-sound-on"></label>
+                <label class="switch-row"><span>🔔 Notifikasi saat aplikasi di latar belakang</span>
+                    <input type="checkbox" class="switch" id="prayer-notif-on"></label>
+                <label class="piket-row"><span>Ingatkan</span>
+                    <select id="prayer-before">
+                        <option value="0">Tepat waktu</option>
+                        <option value="5">5 menit sebelumnya</option>
+                        <option value="10">10 menit sebelumnya</option>
+                        <option value="15">15 menit sebelumnya</option>
+                        <option value="30">30 menit sebelumnya</option>
+                    </select>
+                </label>
+                <label class="volume-row"><span>🔊 Volume</span>
+                    <input type="range" id="prayer-volume" min="0" max="100" value="80"></label>
+
+                <div class="alarm-panel-title prayer-sound-title">🎵 Nada solat</div>
+                <div id="prayer-sound-name" class="alarm-sound-name">🕌 Nada bawaan (lembut)</div>
+                <div class="alarm-buttons">
+                    <button id="prayer-pick-btn" type="button">📁 Pilih lagu</button>
+                    <button id="prayer-edit-btn" type="button">✂ Atur potongan</button>
+                    <button id="prayer-test-btn" type="button">▶ Coba</button>
+                    <button id="prayer-reset-btn" type="button">↺ Nada bawaan</button>
+                </div>
+                <input type="file" id="prayer-file" accept="audio/*" hidden>
+                <button id="prayer-refresh" type="button" class="notif-btn">↻ Perbarui jadwal</button>
+                <div id="prayer-status" class="alarm-status"></div>
+                <div class="alarm-hint">Alarm solat hanya berbunyi selama kalender ini terbuka di browser.</div>
+            </div>
+        </div>
+    </div>
+
     <!-- Editor nada dering: pilih potongan, tes, lalu jadikan nada dering -->
     <div class="modal" id="ringtone-modal">
         <div class="modal-content ringtone-content">
@@ -259,7 +336,7 @@
         </div>
     </div>
 
-    <script src="script.js?v=4"></script>
+    <script src="script.js?v=5"></script>
 </body>
 
 </html>
