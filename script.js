@@ -138,6 +138,33 @@ document.addEventListener('DOMContentLoaded', function() {
     let prayerLoading = false;
     let prayerLastSig = '';
 
+    // Kondisi udara & cuaca (state; fungsinya ada di bagian bawah)
+    const WX_LAT = -6.12, WX_LON = 106.92;          // Semper Barat, Jakarta Utara
+    const WX_KEY = 'weather_v1';
+    const WX_TTL = 30 * 60 * 1000;
+    let wxData = null;
+
+    const WX_CODES = {
+        0: ['☀️', 'Cerah'], 1: ['🌤️', 'Cerah berawan'], 2: ['⛅', 'Berawan sebagian'], 3: ['☁️', 'Berawan'],
+        45: ['🌫️', 'Kabut'], 48: ['🌫️', 'Kabut'],
+        51: ['🌦️', 'Gerimis ringan'], 53: ['🌦️', 'Gerimis'], 55: ['🌦️', 'Gerimis lebat'],
+        56: ['🌦️', 'Gerimis beku'], 57: ['🌦️', 'Gerimis beku'],
+        61: ['🌧️', 'Hujan ringan'], 63: ['🌧️', 'Hujan sedang'], 65: ['🌧️', 'Hujan lebat'],
+        66: ['🌧️', 'Hujan beku'], 67: ['🌧️', 'Hujan beku'],
+        80: ['🌦️', 'Hujan lokal ringan'], 81: ['🌧️', 'Hujan lokal'], 82: ['⛈️', 'Hujan lokal lebat'],
+        95: ['⛈️', 'Badai petir'], 96: ['⛈️', 'Petir & es'], 99: ['⛈️', 'Petir & es lebat']
+    };
+
+    // Catatan harian: { 'YYYY-MM-DD': [ { id, title, body, color, pinned, done, createdAt, updatedAt } ] }
+    const NOTES_KEY = 'dailyNotes_v1';
+    const NOTE_COLORS = [
+        { v: '#4e73df', n: 'Biru' }, { v: '#1cc88a', n: 'Hijau' }, { v: '#f6c23e', n: 'Kuning' },
+        { v: '#e74a3b', n: 'Merah' }, { v: '#6f42c1', n: 'Ungu' }, { v: '#858796', n: 'Abu-abu' }
+    ];
+    let notes = readNotes();
+    let notesFilter = { q: '', mode: 'all' };
+    let editingNote = null;                    // { key, id } saat mengedit, null saat menambah
+
     const baseTitle = document.title;
     let holidays = readHolidayCache();
 
@@ -151,6 +178,8 @@ document.addEventListener('DOMContentLoaded', function() {
         initAlarms();
         initPiketAlarm();
         initPrayer();
+        initNotes();
+        initWeather();
 
         // Tahun di footer mengikuti tahun berjalan
         const footerYear = document.getElementById('footer-year');
@@ -242,7 +271,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function isCycleA(date) {
         const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
         const diff = Math.round((d - A_START) / 86400000);
-        return diff >= 0 && diff % A_INTERVAL === 0;
+        return ((diff % A_INTERVAL) + A_INTERVAL) % A_INTERVAL === 0;   // juga berlaku mundur ke tanggal sebelum A_START
     }
 
     // Baris (minggu) ke-berapa dalam grid bulan (mulai Minggu), 1-based
@@ -305,8 +334,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function createABadge(date) {
         const badge = document.createElement('span');
-        badge.className = 'a-badge';
-        badge.textContent = 'A';
+        // Selasa setelah Minggu (baris 2-4) yang jatuh pada siklus A = huruf "C" (cadangan)
+        const isC = !!date && !isCycleA(date);
+        badge.className = 'a-badge' + (isC ? ' c-badge' : '');
+        badge.textContent = isC ? 'C' : 'A';
+        if (isC) { badge.title = 'Cadangan'; return badge; }
         const piket = date ? getPiket(date) : null;
         if (piket) {
             const besok = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
@@ -332,7 +364,8 @@ document.addEventListener('DOMContentLoaded', function() {
             app: 'kalender-acara',
             version: 1,
             exportedAt: new Date().toISOString(),
-            events
+            events,
+            notes
         };
         const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
@@ -343,7 +376,7 @@ document.addEventListener('DOMContentLoaded', function() {
         a.click();
         a.remove();
         setTimeout(() => URL.revokeObjectURL(url), 1000);
-        showBackupStatus(`✔ ${events.length} acara diekspor.`);
+        showBackupStatus(`✔ ${events.length} acara dan ${countAllNotes()} catatan diekspor.`);
     }
 
     // Rapikan & validasi satu acara dari file backup
@@ -376,7 +409,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            const list = Array.isArray(parsed) ? parsed : parsed && parsed.events;
+            const noteSource = parsed && !Array.isArray(parsed) && parsed.notes && typeof parsed.notes === 'object' ? parsed.notes : null;
+            const list = Array.isArray(parsed) ? parsed
+                : parsed && Array.isArray(parsed.events) ? parsed.events
+                : noteSource ? [] : null;
             if (!Array.isArray(list)) {
                 showBackupStatus('Format backup tidak dikenali.', true);
                 return;
@@ -386,21 +422,26 @@ document.addEventListener('DOMContentLoaded', function() {
             const existingIds = new Set(events.map(ev => ev.id));
             const fresh = valid.filter(ev => !existingIds.has(ev.id));
 
+            const freshNotes = collectImportNotes(noteSource);
             const ok = confirm(
                 `Ditemukan ${valid.length} acara di file ini:\n` +
                 `• ${fresh.length} acara baru akan ditambahkan\n` +
-                `• ${valid.length - fresh.length} acara sudah ada (dilewati)\n\n` +
-                'Acara yang sudah ada di kalender tidak akan dihapus. Lanjutkan?'
+                `• ${valid.length - fresh.length} acara sudah ada (dilewati)\n` +
+                (noteSource ? `• ${freshNotes.length} catatan baru akan ditambahkan\n` : '') + '\n' +
+                'Data yang sudah ada di kalender tidak akan dihapus. Lanjutkan?'
             );
             if (!ok) return;
 
             events = events.concat(fresh);
             fresh.forEach(markPastAlarmFired);
             saveEventsToStorage();
+            freshNotes.forEach(x => { (notes[x.key] = notes[x.key] || []).push(x.note); });
+            if (freshNotes.length) saveNotes();
 
             renderCalendar();
             renderEventsList();
-            showBackupStatus(`✔ ${fresh.length} acara berhasil dipulihkan.`);
+            renderNotesPanel();
+            showBackupStatus(`✔ ${fresh.length} acara` + (noteSource ? ` dan ${freshNotes.length} catatan` : '') + ' berhasil dipulihkan.');
         };
         reader.readAsText(file);
     }
@@ -787,6 +828,629 @@ document.addEventListener('DOMContentLoaded', function() {
 
         updatePiketNext();
         setInterval(updatePiketNext, 60000);
+    }
+
+    // ===== Catatan harian =====
+    function newNoteId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+
+    function sanitizeNote(n) {
+        if (!n || typeof n !== 'object') return null;
+        const title = String(n.title || '').slice(0, 80);
+        const body = String(n.body || '').slice(0, 2000);
+        if (!title.trim() && !body.trim()) return null;
+        const created = Number(n.createdAt) || Date.now();
+        return {
+            id: String(n.id || newNoteId()),
+            title, body,
+            color: NOTE_COLORS.some(c => c.v === n.color) ? n.color : NOTE_COLORS[0].v,
+            pinned: !!n.pinned,
+            done: !!n.done,
+            createdAt: created,
+            updatedAt: Number(n.updatedAt) || created
+        };
+    }
+
+    function readNotes() {
+        const raw = readJSON(NOTES_KEY, {});
+        const out = {};
+        if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out;
+        Object.keys(raw).forEach(k => {
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(k) || !Array.isArray(raw[k])) return;
+            const list = raw[k].map(sanitizeNote).filter(Boolean);
+            if (list.length) out[k] = list;
+        });
+        return out;
+    }
+
+    function saveNotes() { writeJSON(NOTES_KEY, notes); }
+
+    function sortedNotes(key) {
+        return (notes[key] || []).slice().sort((a, b) => (Number(b.pinned) - Number(a.pinned)) || (a.createdAt - b.createdAt));
+    }
+
+    function noteCount(key) { return (notes[key] || []).length; }
+
+    function countAllNotes() {
+        return Object.keys(notes).reduce((sum, k) => sum + notes[k].length, 0);
+    }
+
+    // Catatan dari file backup yang belum ada di perangkat ini
+    function collectImportNotes(source) {
+        if (!source) return [];
+        const have = new Set();
+        Object.keys(notes).forEach(k => notes[k].forEach(n => have.add(n.id)));
+        const out = [];
+        Object.keys(source).forEach(k => {
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(k) || !Array.isArray(source[k])) return;
+            source[k].map(sanitizeNote).filter(Boolean).forEach(n => {
+                if (!have.has(n.id)) { have.add(n.id); out.push({ key: k, note: n }); }
+            });
+        });
+        return out;
+    }
+
+    function noteDateLabel(key, short) {
+        const [y, m, d] = key.split('-').map(Number);
+        return new Date(y, m - 1, d).toLocaleDateString('id-ID', short
+            ? { weekday: 'short', day: 'numeric', month: 'short' }
+            : { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    }
+
+    function noteTimeLabel(ms) {
+        return new Date(ms).toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    }
+
+    function isShown(id) {
+        const el = document.getElementById(id);
+        return !!el && el.style.display === 'flex';
+    }
+
+    // Gambar ulang semua tampilan yang memuat catatan (posisi scroll kalender dipertahankan)
+    function refreshNotesUI() {
+        const top = calendarView.scrollTop;
+        renderCalendar();
+        calendarView.scrollTop = top;
+        renderNotesPanel();
+        if (isShown('notes-book-modal')) renderNotesBook();
+    }
+
+    function removeNote(key, id) {
+        notes[key] = (notes[key] || []).filter(n => n.id !== id);
+        if (!notes[key].length) delete notes[key];
+    }
+
+    function patchNote(key, id, patch) {
+        const n = (notes[key] || []).find(x => x.id === id);
+        if (!n) return;
+        Object.assign(n, patch, { updatedAt: Date.now() });
+        saveNotes();
+        refreshNotesUI();
+    }
+
+    function deleteNote(key, id) {
+        if (!confirm('Hapus catatan ini?')) return false;
+        removeNote(key, id);
+        saveNotes();
+        refreshNotesUI();
+        return true;
+    }
+
+    function createNoteBadge(date) {
+        const key = dateKey(date);
+        const n = noteCount(key);
+        if (!n) return null;
+        const badge = document.createElement('span');
+        badge.className = 'note-badge';
+        badge.textContent = '📝 ' + n;
+        const first = sortedNotes(key).slice(0, 3).map(x => '• ' + (x.title.trim() || x.body.trim()).slice(0, 40));
+        badge.title = `${n} catatan:\n` + first.join('\n') + (n > 3 ? '\n…' : '');
+        return badge;
+    }
+
+    function createNoteCard(note, key, opts) {
+        opts = opts || {};
+        const card = document.createElement('div');
+        card.className = 'note-card' + (note.done ? ' done' : '') + (note.pinned ? ' pinned' : '') + (opts.compact ? ' compact' : '');
+        card.style.setProperty('--note-color', note.color);
+
+        const check = document.createElement('input');
+        check.type = 'checkbox';
+        check.className = 'note-check';
+        check.checked = note.done;
+        check.title = 'Tandai selesai';
+        check.setAttribute('aria-label', 'Tandai selesai');
+        check.addEventListener('click', e => e.stopPropagation());
+        check.addEventListener('change', () => patchNote(key, note.id, { done: check.checked }));
+
+        const main = document.createElement('div');
+        main.className = 'note-main';
+        if (note.title.trim()) {
+            const t = document.createElement('div');
+            t.className = 'note-title';
+            t.textContent = note.title;
+            main.appendChild(t);
+        }
+        if (note.body.trim()) {
+            const b = document.createElement('div');
+            b.className = 'note-body';
+            b.textContent = note.body;
+            main.appendChild(b);
+        }
+        const meta = document.createElement('div');
+        meta.className = 'note-meta';
+        meta.textContent = (note.pinned ? '📌 ' : '') + (opts.showDate ? noteDateLabel(key, true) + ' • ' : '') +
+            'Diubah ' + noteTimeLabel(note.updatedAt);
+        main.appendChild(meta);
+
+        card.appendChild(check);
+        card.appendChild(main);
+
+        if (!opts.compact) {
+            const actions = document.createElement('div');
+            actions.className = 'note-actions';
+            const pin = document.createElement('button');
+            pin.type = 'button';
+            pin.className = 'note-icon-btn' + (note.pinned ? ' on' : '');
+            pin.textContent = '📌';
+            pin.title = note.pinned ? 'Lepas sematan' : 'Sematkan di atas';
+            pin.setAttribute('aria-label', pin.title);
+            pin.addEventListener('click', e => { e.stopPropagation(); patchNote(key, note.id, { pinned: !note.pinned }); });
+            const del = document.createElement('button');
+            del.type = 'button';
+            del.className = 'note-icon-btn';
+            del.textContent = '🗑️';
+            del.title = 'Hapus catatan';
+            del.setAttribute('aria-label', 'Hapus catatan');
+            del.addEventListener('click', e => { e.stopPropagation(); deleteNote(key, note.id); });
+            actions.appendChild(pin);
+            actions.appendChild(del);
+            card.appendChild(actions);
+        }
+
+        card.title = 'Klik untuk mengedit';
+        card.addEventListener('click', () => openNoteEditor(key, note.id));
+        return card;
+    }
+
+    // Bagian "Catatan" di tampilan Hari
+    function createDayNotesSection(date) {
+        const key = dateKey(date);
+        const items = sortedNotes(key);
+        const sec = document.createElement('section');
+        sec.className = 'notes-section';
+
+        const head = document.createElement('div');
+        head.className = 'notes-section-head';
+        const title = document.createElement('div');
+        title.className = 'notes-section-title';
+        title.textContent = '📝 Catatan';
+        const pill = document.createElement('span');
+        pill.className = 'notes-count-pill';
+        pill.textContent = items.length;
+        title.appendChild(pill);
+        const add = document.createElement('button');
+        add.type = 'button';
+        add.className = 'note-add-btn';
+        add.textContent = '＋ Tambah catatan';
+        add.addEventListener('click', () => openNoteEditor(key));
+        head.appendChild(title);
+        head.appendChild(add);
+        sec.appendChild(head);
+
+        if (!items.length) {
+            const empty = document.createElement('div');
+            empty.className = 'notes-empty';
+            empty.textContent = 'Belum ada catatan untuk hari ini. Tulis hal penting, ide, atau pengingat di sini.';
+            sec.appendChild(empty);
+        } else {
+            const list = document.createElement('div');
+            list.className = 'notes-list';
+            items.forEach(n => list.appendChild(createNoteCard(n, key)));
+            sec.appendChild(list);
+        }
+        return sec;
+    }
+
+    // Panel di sidebar: catatan hari ini
+    function renderNotesPanel() {
+        const list = document.getElementById('notes-mini-list');
+        if (!list) return;
+        const key = dateKey(new Date());
+        renderNotesPanel.key = key;
+        const items = sortedNotes(key);
+        document.getElementById('notes-today-count').textContent = items.length;
+        document.getElementById('notes-panel-date').textContent = noteDateLabel(key);
+        list.innerHTML = '';
+        if (!items.length) {
+            const empty = document.createElement('div');
+            empty.className = 'notes-empty';
+            empty.textContent = 'Belum ada catatan hari ini.';
+            list.appendChild(empty);
+            return;
+        }
+        items.slice(0, 3).forEach(n => list.appendChild(createNoteCard(n, key, { compact: true })));
+        if (items.length > 3) {
+            const more = document.createElement('button');
+            more.type = 'button';
+            more.className = 'note-more-btn';
+            more.textContent = `+${items.length - 3} catatan lainnya, lihat semua`;
+            more.addEventListener('click', () => goToNoteDay(key));
+            list.appendChild(more);
+        }
+    }
+
+    function goToNoteDay(key) {
+        const [y, m, d] = key.split('-').map(Number);
+        currentDate = new Date(y, m - 1, d);
+        closeNotesBook();
+        switchView('day');
+    }
+
+    // Buku catatan: semua catatan, dikelompokkan per tanggal
+    function renderNotesBook() {
+        const list = document.getElementById('notes-book-list');
+        const summary = document.getElementById('notes-summary');
+        if (!list) return;
+        const q = notesFilter.q.trim().toLowerCase();
+        const thisMonth = dateKey(new Date()).slice(0, 7);
+        const todayKey = dateKey(new Date());
+        list.innerHTML = '';
+        document.querySelectorAll('#notes-chips .note-chip').forEach(c =>
+            c.classList.toggle('active', c.dataset.mode === notesFilter.mode));
+
+        let total = 0;
+        let days = 0;
+        Object.keys(notes).sort().reverse().forEach(key => {
+            const items = sortedNotes(key).filter(n => {
+                if (notesFilter.mode === 'pinned' && !n.pinned) return false;
+                if (notesFilter.mode === 'open' && n.done) return false;
+                if (notesFilter.mode === 'month' && !key.startsWith(thisMonth)) return false;
+                if (q && !(n.title + ' ' + n.body).toLowerCase().includes(q)) return false;
+                return true;
+            });
+            if (!items.length) return;
+            total += items.length;
+            days++;
+
+            const group = document.createElement('div');
+            group.className = 'notes-group';
+            const head = document.createElement('button');
+            head.type = 'button';
+            head.className = 'notes-group-head';
+            head.title = 'Buka tampilan hari ini';
+            const label = document.createElement('span');
+            label.textContent = noteDateLabel(key) + (key === todayKey ? ' • Hari ini' : '');
+            const count = document.createElement('span');
+            count.className = 'notes-count-pill';
+            count.textContent = items.length;
+            head.appendChild(label);
+            head.appendChild(count);
+            head.addEventListener('click', () => goToNoteDay(key));
+            group.appendChild(head);
+            items.forEach(n => group.appendChild(createNoteCard(n, key)));
+            list.appendChild(group);
+        });
+
+        if (!total) {
+            const empty = document.createElement('div');
+            empty.className = 'notes-empty big';
+            empty.textContent = countAllNotes()
+                ? 'Tidak ada catatan yang cocok dengan pencarian atau filter ini.'
+                : 'Belum ada catatan. Tekan "＋ Catatan" untuk mulai menulis.';
+            list.appendChild(empty);
+        }
+        summary.textContent = total ? `${total} catatan di ${days} hari` : '';
+    }
+
+    function openNotesBook() {
+        notesFilter = { q: '', mode: 'all' };
+        document.getElementById('notes-search').value = '';
+        renderNotesBook();
+        document.getElementById('notes-book-modal').style.display = 'flex';
+    }
+
+    function closeNotesBook() {
+        const m = document.getElementById('notes-book-modal');
+        if (m) m.style.display = 'none';
+    }
+
+    // Editor catatan (tambah / edit)
+    function openNoteEditor(key, id) {
+        const $ = x => document.getElementById(x);
+        const existing = id ? (notes[key] || []).find(n => n.id === id) : null;
+        editingNote = existing ? { key, id } : null;
+        $('note-form-title').textContent = existing ? 'Edit catatan' : 'Tambah catatan';
+        $('note-date').value = key || dateKey(new Date());
+        $('note-title').value = existing ? existing.title : '';
+        $('note-body').value = existing ? existing.body : '';
+        $('note-pinned').checked = existing ? existing.pinned : false;
+        const color = existing ? existing.color : NOTE_COLORS[0].v;
+        document.querySelectorAll('input[name="note-color"]').forEach(r => { r.checked = r.value === color; });
+        $('note-counter').textContent = `${$('note-body').value.length} / 2000`;
+        $('note-error').textContent = '';
+        $('note-delete').hidden = !existing;
+        $('note-modal').style.display = 'flex';
+        setTimeout(() => { try { (existing ? $('note-body') : $('note-title')).focus(); } catch (e) {} }, 50);
+    }
+
+    function closeNoteEditor() {
+        const m = document.getElementById('note-modal');
+        if (m) m.style.display = 'none';
+        editingNote = null;
+    }
+
+    function saveNoteFromForm() {
+        const $ = x => document.getElementById(x);
+        const title = $('note-title').value.trim();
+        const body = $('note-body').value.replace(/\s+$/, '');
+        if (!title && !body.trim()) {
+            $('note-error').textContent = 'Isi judul atau catatannya dulu.';
+            return;
+        }
+        const key = $('note-date').value || dateKey(new Date());
+        const picked = document.querySelector('input[name="note-color"]:checked');
+        const now = Date.now();
+        let base = { id: newNoteId(), createdAt: now, done: false };
+        if (editingNote) {
+            const old = (notes[editingNote.key] || []).find(n => n.id === editingNote.id);
+            if (old) {
+                base = { id: old.id, createdAt: old.createdAt, done: old.done };
+                removeNote(editingNote.key, old.id);
+            }
+        }
+        const note = Object.assign(base, {
+            title, body,
+            color: picked ? picked.value : NOTE_COLORS[0].v,
+            pinned: $('note-pinned').checked,
+            updatedAt: now
+        });
+        (notes[key] = notes[key] || []).push(note);
+        saveNotes();
+        closeNoteEditor();
+        refreshNotesUI();
+    }
+
+    function initNotes() {
+        const $ = x => document.getElementById(x);
+        if (!$('note-modal') || !$('notes-book-modal')) return;
+
+        $('note-swatches').innerHTML = NOTE_COLORS.map((c, i) =>
+            `<label class="note-swatch" title="${c.n}"><input type="radio" name="note-color" value="${c.v}"` +
+            `${i === 0 ? ' checked' : ''}><span style="background:${c.v}"></span></label>`).join('');
+
+        $('notes-panel-add').addEventListener('click', () => openNoteEditor(dateKey(new Date())));
+        $('notes-open-book').addEventListener('click', openNotesBook);
+        $('notes-book-add').addEventListener('click', () => openNoteEditor(dateKey(new Date())));
+        $('notes-book-close').addEventListener('click', closeNotesBook);
+        $('notes-book-modal').addEventListener('click', e => { if (e.target === $('notes-book-modal')) closeNotesBook(); });
+        $('notes-search').addEventListener('input', e => { notesFilter.q = e.target.value; renderNotesBook(); });
+        $('notes-chips').addEventListener('click', e => {
+            const chip = e.target.closest('.note-chip');
+            if (!chip) return;
+            notesFilter.mode = chip.dataset.mode;
+            renderNotesBook();
+        });
+
+        $('note-close').addEventListener('click', closeNoteEditor);
+        $('note-cancel').addEventListener('click', closeNoteEditor);
+        $('note-modal').addEventListener('click', e => { if (e.target === $('note-modal')) closeNoteEditor(); });
+        $('note-form').addEventListener('submit', e => { e.preventDefault(); saveNoteFromForm(); });
+        $('note-body').addEventListener('input', () => {
+            $('note-counter').textContent = `${$('note-body').value.length} / 2000`;
+            $('note-error').textContent = '';
+        });
+        $('note-title').addEventListener('input', () => { $('note-error').textContent = ''; });
+        $('note-body').addEventListener('keydown', e => {
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); $('note-form').requestSubmit(); }
+        });
+        $('note-delete').addEventListener('click', () => {
+            if (editingNote && deleteNote(editingNote.key, editingNote.id)) closeNoteEditor();
+        });
+        document.addEventListener('keydown', e => {
+            if (e.key !== 'Escape') return;
+            if (isShown('note-modal')) closeNoteEditor();
+            else if (isShown('notes-book-modal')) closeNotesBook();
+        });
+
+        renderNotesPanel();
+        // Panel "hari ini" ikut berganti saat lewat tengah malam
+        setInterval(() => {
+            if (renderNotesPanel.key !== dateKey(new Date())) renderNotesPanel();
+        }, 60000);
+    }
+
+    // ===== Kondisi udara & cuaca (Open-Meteo, tanpa API key) =====
+    function wxInfo(code) { return WX_CODES[code] || ['🌡️', 'Tidak diketahui']; }
+
+    // Skala US AQI
+    function aqiInfo(v) {
+        if (v == null || isNaN(v)) return { label: 'Tidak tersedia', color: '#858796', tip: 'Data kualitas udara belum tersedia.' };
+        if (v <= 50) return { label: 'Baik', color: '#1cc88a', tip: 'Udara bersih, aman untuk beraktivitas di luar.' };
+        if (v <= 100) return { label: 'Sedang', color: '#f6c23e', tip: 'Dapat diterima. Orang yang sangat sensitif sebaiknya mengurangi aktivitas berat di luar.' };
+        if (v <= 150) return { label: 'Tidak sehat bagi kelompok sensitif', color: '#fd7e14', tip: 'Anak-anak, lansia, dan penderita asma/jantung sebaiknya membatasi aktivitas di luar. Pakai masker bila perlu.' };
+        if (v <= 200) return { label: 'Tidak sehat', color: '#e74a3b', tip: 'Kurangi aktivitas berat di luar ruangan dan gunakan masker.' };
+        if (v <= 300) return { label: 'Sangat tidak sehat', color: '#8e44ad', tip: 'Hindari aktivitas di luar ruangan. Gunakan masker.' };
+        return { label: 'Berbahaya', color: '#7b1e3a', tip: 'Tetap di dalam ruangan.' };
+    }
+
+    function wxFetchJSON(url) {
+        return fetch(url, { cache: 'no-store' }).then(r => {
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.json();
+        });
+    }
+
+    function loadWeather(force) {
+        let cached = null;
+        try { cached = JSON.parse(localStorage.getItem(WX_KEY) || 'null'); } catch (e) {}
+        if (cached && cached.data) {
+            wxData = cached.data;
+            wxData.fetchedAt = cached.t;
+            renderWeather();
+        }
+        if (!force && cached && Date.now() - cached.t < WX_TTL) return Promise.resolve();
+
+        const tz = 'timezone=Asia%2FJakarta';
+        const ll = `latitude=${WX_LAT}&longitude=${WX_LON}`;
+        const now = wxFetchJSON(`https://api.open-meteo.com/v1/forecast?${ll}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,precipitation` +
+            `&hourly=temperature_2m,precipitation_probability,weather_code&forecast_days=2&${tz}`);
+        const daily = wxFetchJSON(`https://api.open-meteo.com/v1/forecast?${ll}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum` +
+            `&past_days=31&forecast_days=16&${tz}`);
+        const air = wxFetchJSON(`https://air-quality-api.open-meteo.com/v1/air-quality?${ll}&current=us_aqi,pm2_5,pm10,ozone,nitrogen_dioxide,sulphur_dioxide,carbon_monoxide&${tz}`);
+
+        return Promise.allSettled([now, daily, air]).then(([a, b, c]) => {
+            if (a.status !== 'fulfilled' && b.status !== 'fulfilled' && c.status !== 'fulfilled') throw new Error('offline');
+            const prev = wxData || {};
+            wxData = {
+                now: a.status === 'fulfilled' ? a.value : prev.now,
+                daily: b.status === 'fulfilled' ? b.value : prev.daily,
+                air: c.status === 'fulfilled' ? c.value : prev.air,
+                fetchedAt: Date.now()
+            };
+            try { localStorage.setItem(WX_KEY, JSON.stringify({ t: wxData.fetchedAt, data: { now: wxData.now, daily: wxData.daily, air: wxData.air } })); } catch (e) {}
+            renderWeather();
+        }).catch(() => {
+            const el = document.getElementById('wx-status');
+            if (el) el.textContent = wxData ? '⚠ Gagal memperbarui, memakai data terakhir' : '⚠ Cuaca gagal dimuat (cek koneksi)';
+        });
+    }
+
+    function wxNum(v, d) { return v == null || isNaN(v) ? '–' : Number(v).toFixed(d || 0); }
+
+    function renderWeather() {
+        const card = document.getElementById('wx-card');
+        if (!card || !wxData) return;
+        const cur = wxData.now && wxData.now.current;
+        const air = wxData.air && wxData.air.current;
+        if (cur) {
+            const [icon, label] = wxInfo(cur.weather_code);
+            document.getElementById('wx-icon').textContent = icon;
+            document.getElementById('wx-temp').textContent = wxNum(cur.temperature_2m) + '°C';
+            document.getElementById('wx-desc').textContent = label;
+            document.getElementById('wx-extra').textContent =
+                `Terasa ${wxNum(cur.apparent_temperature)}° • Lembap ${wxNum(cur.relative_humidity_2m)}% • Angin ${wxNum(cur.wind_speed_10m)} km/j`;
+        }
+        const aqi = aqiInfo(air ? air.us_aqi : null);
+        const badge = document.getElementById('wx-aqi');
+        badge.style.setProperty('--aqi-color', aqi.color);
+        document.getElementById('wx-aqi-val').textContent = air && air.us_aqi != null ? Math.round(air.us_aqi) : '–';
+        document.getElementById('wx-aqi-label').textContent = aqi.label;
+        const st = document.getElementById('wx-status');
+        st.textContent = wxData.fetchedAt
+            ? 'Diperbarui ' + new Date(wxData.fetchedAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '';
+        if (isShown('wx-modal')) renderWeatherDetail();
+    }
+
+    // Detail: hari ini (per jam + polutan) dan bulan ini (per hari)
+    function renderWeatherDetail() {
+        if (!wxData) return;
+        const cur = wxData.now && wxData.now.current;
+        const air = wxData.air && wxData.air.current;
+        const nowStr = cur && cur.time ? cur.time : null;     // "YYYY-MM-DDTHH:MM" (WIB)
+        const todayKey = nowStr ? nowStr.slice(0, 10) : dateKey(new Date());
+
+        // --- Hari ini ---
+        const box = document.getElementById('wx-today');
+        box.innerHTML = '';
+        if (cur) {
+            const [icon, label] = wxInfo(cur.weather_code);
+            const hero = document.createElement('div');
+            hero.className = 'wx-hero';
+            hero.innerHTML = `<div class="wx-hero-icon">${icon}</div><div><div class="wx-hero-temp">${wxNum(cur.temperature_2m)}°C</div>` +
+                `<div>${label}</div><div class="wx-hero-sub">Terasa ${wxNum(cur.apparent_temperature)}° • Lembap ${wxNum(cur.relative_humidity_2m)}% • Angin ${wxNum(cur.wind_speed_10m)} km/j</div></div>`;
+            box.appendChild(hero);
+        }
+        const aqi = aqiInfo(air ? air.us_aqi : null);
+        const aq = document.createElement('div');
+        aq.className = 'wx-aq';
+        aq.style.setProperty('--aqi-color', aqi.color);
+        const pol = air ? [['PM2.5', air.pm2_5, 'µg/m³'], ['PM10', air.pm10, 'µg/m³'], ['O₃', air.ozone, 'µg/m³'],
+            ['NO₂', air.nitrogen_dioxide, 'µg/m³'], ['SO₂', air.sulphur_dioxide, 'µg/m³'], ['CO', air.carbon_monoxide, 'µg/m³']] : [];
+        aq.innerHTML = `<div class="wx-aq-head"><span class="wx-aq-val">${air && air.us_aqi != null ? Math.round(air.us_aqi) : '–'}</span>` +
+            `<div><div class="wx-aq-title">Kualitas Udara (US AQI)</div><div class="wx-aq-label"></div></div></div>` +
+            `<div class="wx-aq-tip"></div><div class="wx-pol">` +
+            pol.map(p => `<div><span>${p[0]}</span><strong>${wxNum(p[1], 1)}</strong><small>${p[2]}</small></div>`).join('') + '</div>';
+        aq.querySelector('.wx-aq-label').textContent = aqi.label;
+        aq.querySelector('.wx-aq-tip').textContent = aqi.tip;
+        box.appendChild(aq);
+
+        const hourly = wxData.now && wxData.now.hourly;
+        if (hourly && hourly.time) {
+            const title = document.createElement('div');
+            title.className = 'wx-sub';
+            title.textContent = 'Perkiraan per jam';
+            box.appendChild(title);
+            const strip = document.createElement('div');
+            strip.className = 'wx-hours';
+            const startIdx = hourly.time.findIndex(t => nowStr && t >= nowStr.slice(0, 13) + ':00');
+            hourly.time.slice(Math.max(startIdx, 0), Math.max(startIdx, 0) + 24).forEach((t, i) => {
+                const k = Math.max(startIdx, 0) + i;
+                const item = document.createElement('div');
+                item.className = 'wx-hour' + (i === 0 ? ' now' : '');
+                item.innerHTML = `<span>${i === 0 ? 'Kini' : t.slice(11, 16)}</span><div>${wxInfo(hourly.weather_code[k])[0]}</div>` +
+                    `<strong>${wxNum(hourly.temperature_2m[k])}°</strong><small>💧${wxNum(hourly.precipitation_probability[k])}%</small>`;
+                strip.appendChild(item);
+            });
+            box.appendChild(strip);
+        }
+
+        // --- Bulan ini ---
+        const mbox = document.getElementById('wx-month');
+        mbox.innerHTML = '';
+        const [ty, tm] = todayKey.split('-').map(Number);
+        const dl = wxData.daily && wxData.daily.daily;
+        document.getElementById('wx-month-title').textContent =
+            new Date(ty, tm - 1, 1).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+        const byDate = {};
+        if (dl && dl.time) dl.time.forEach((t, i) => { byDate[t] = i; });
+        const first = new Date(ty, tm - 1, 1).getDay();
+        const total = new Date(ty, tm, 0).getDate();
+        ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'].forEach(n => {
+            const h = document.createElement('div'); h.className = 'wx-dow'; h.textContent = n; mbox.appendChild(h);
+        });
+        for (let i = 0; i < first; i++) mbox.appendChild(document.createElement('div'));
+        for (let d = 1; d <= total; d++) {
+            const key = `${ty}-${String(tm).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            const i = byDate[key];
+            const cell = document.createElement('div');
+            cell.className = 'wx-day' + (key === todayKey ? ' today' : '') + (key < todayKey ? ' past' : '');
+            if (i == null) {
+                cell.innerHTML = `<b>${d}</b><div class="wx-na">–</div>`;
+                cell.title = 'Prakiraan belum tersedia';
+            } else {
+                const [icon, label] = wxInfo(dl.weather_code[i]);
+                cell.innerHTML = `<b>${d}</b><div class="wx-day-icon">${icon}</div>` +
+                    `<strong>${wxNum(dl.temperature_2m_max[i])}°</strong><small>${wxNum(dl.temperature_2m_min[i])}°</small>` +
+                    `<small>💧${wxNum(dl.precipitation_probability_max[i])}%</small>`;
+                cell.title = `${label}\nSuhu ${wxNum(dl.temperature_2m_min[i])}–${wxNum(dl.temperature_2m_max[i])}°C\n` +
+                    `Peluang hujan ${wxNum(dl.precipitation_probability_max[i])}% • Curah ${wxNum(dl.precipitation_sum[i], 1)} mm`;
+            }
+            mbox.appendChild(cell);
+        }
+        const note = document.getElementById('wx-month-note');
+        note.textContent = 'Prakiraan tersedia sekitar 16 hari ke depan; tanggal setelahnya ditandai "–". Tanggal lalu memakai data model cuaca.';
+    }
+
+    function openWeatherDetail() {
+        document.getElementById('wx-modal').style.display = 'flex';
+        renderWeatherDetail();
+        loadWeather(false);
+    }
+
+    function initWeather() {
+        const $ = x => document.getElementById(x);
+        if (!$('wx-card')) return;
+        $('wx-detail-btn').addEventListener('click', openWeatherDetail);
+        $('wx-close').addEventListener('click', () => { $('wx-modal').style.display = 'none'; });
+        $('wx-modal').addEventListener('click', e => { if (e.target === $('wx-modal')) $('wx-modal').style.display = 'none'; });
+        document.querySelectorAll('#wx-tabs .note-chip').forEach(btn => btn.addEventListener('click', () => {
+            document.querySelectorAll('#wx-tabs .note-chip').forEach(b => b.classList.toggle('active', b === btn));
+            $('wx-pane-today').hidden = btn.dataset.tab !== 'today';
+            $('wx-pane-month').hidden = btn.dataset.tab !== 'month';
+        }));
+        document.addEventListener('keydown', e => { if (e.key === 'Escape' && isShown('wx-modal')) $('wx-modal').style.display = 'none'; });
+        loadWeather(false);
+        setInterval(() => loadWeather(false), 10 * 60 * 1000);
     }
 
     // ===== Waktu solat 5 waktu =====
@@ -1869,6 +2533,12 @@ document.addEventListener('DOMContentLoaded', function() {
         dayNumber.textContent = date.getDate();
         dayCell.appendChild(dayNumber);
 
+        const noteBadge = createNoteBadge(date);
+        if (noteBadge) {
+            dayCell.appendChild(noteBadge);
+            dayCell.classList.add('has-notes');
+        }
+
         if (hasA(date)) dayCell.appendChild(createABadge(date));
 
         const piketDini = getPiketDini(date);
@@ -1977,6 +2647,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 b.classList.add('inline');
                 dayHeader.appendChild(b);
             }
+            const weekNotes = noteCount(dateKey(dayDate));
+            if (weekNotes) {
+                const chip = document.createElement('span');
+                chip.className = 'week-note-chip';
+                chip.textContent = '📝 ' + weekNotes;
+                chip.title = weekNotes + ' catatan';
+                dayHeader.appendChild(chip);
+            }
             weekHeader.appendChild(dayHeader);
         }
 
@@ -2066,6 +2744,7 @@ document.addEventListener('DOMContentLoaded', function() {
             dayHeader.appendChild(hl);
         }
         dayContainer.appendChild(dayHeader);
+        dayContainer.appendChild(createDayNotesSection(currentDate));
 
         const dayGrid = document.createElement('div');
         dayGrid.className = 'day-grid';
