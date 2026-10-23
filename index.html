@@ -17,7 +17,7 @@
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- ?v=3 memaksa browser mengambil file terbaru. Naikkan angkanya (v=4, v=5, ...) setiap kali style.css / script.js diubah -->
-    <link rel="stylesheet" href="style.css?v=5">
+    <link rel="stylesheet" href="style.css?v=7">
 </head>
 
 <body>
@@ -48,12 +48,45 @@
             </div>
 
             <aside class="sidebar">
+                <!-- Kondisi udara & cuaca: Semper Barat -->
+                <div class="wx-card" id="wx-card">
+                    <div class="wx-top">
+                        <div class="wx-place">📍 Semper Barat, Jakarta Utara</div>
+                        <button type="button" id="wx-detail-btn" class="note-ghost-btn wx-detail-btn">Detail</button>
+                    </div>
+                    <div class="wx-main">
+                        <div class="wx-icon" id="wx-icon">🌡️</div>
+                        <div class="wx-now">
+                            <div class="wx-temp" id="wx-temp">--°C</div>
+                            <div class="wx-desc" id="wx-desc">Memuat cuaca…</div>
+                        </div>
+                        <div class="wx-aqi" id="wx-aqi">
+                            <span class="wx-aqi-cap">Udara</span>
+                            <span class="wx-aqi-val" id="wx-aqi-val">–</span>
+                            <span class="wx-aqi-label" id="wx-aqi-label">AQI</span>
+                        </div>
+                    </div>
+                    <div class="wx-extra" id="wx-extra"></div>
+                    <div class="wx-status" id="wx-status"></div>
+                </div>
                 <div class="sidebar-header">
                     <h3>Acara Mendatang</h3>
                     <button id="add-event-btn"><i class="fas fa-plus"></i> Tambah</button>
                 </div>
                 <div class="events-list" id="events-list">
                     <!-- Daftar acara ditampilkan di sini -->
+                </div>
+                <div class="notes-panel" id="notes-panel">
+                    <div class="notes-panel-head">
+                        <div class="alarm-panel-title">📝 Catatan Hari Ini</div>
+                        <span class="notes-count-pill" id="notes-today-count">0</span>
+                    </div>
+                    <div class="notes-panel-date" id="notes-panel-date"></div>
+                    <div class="notes-mini-list" id="notes-mini-list"></div>
+                    <div class="notes-panel-actions">
+                        <button type="button" id="notes-panel-add" class="note-add-btn">＋ Tambah</button>
+                        <button type="button" id="notes-open-book" class="note-ghost-btn">📖 Buku catatan</button>
+                    </div>
                 </div>
                 <div class="prayer-card" id="prayer-card">
                     <div class="prayer-card-top">
@@ -218,6 +251,86 @@
         </div>
     </div>
 
+    <!-- Buku catatan: semua catatan per tanggal -->
+    <div class="modal" id="notes-book-modal">
+        <div class="modal-content notes-book">
+            <span class="close-btn" id="notes-book-close">&times;</span>
+            <h2>📖 Buku Catatan</h2>
+            <div class="notes-toolbar">
+                <input type="search" id="notes-search" placeholder="Cari catatan…" aria-label="Cari catatan"
+                    autocomplete="off">
+                <button type="button" id="notes-book-add" class="note-add-btn">＋ Catatan</button>
+            </div>
+            <div class="notes-chips" id="notes-chips">
+                <button type="button" class="note-chip active" data-mode="all">Semua</button>
+                <button type="button" class="note-chip" data-mode="pinned">📌 Disematkan</button>
+                <button type="button" class="note-chip" data-mode="month">Bulan ini</button>
+                <button type="button" class="note-chip" data-mode="open">Belum selesai</button>
+            </div>
+            <div class="notes-summary" id="notes-summary"></div>
+            <div class="notes-book-list" id="notes-book-list"></div>
+        </div>
+    </div>
+
+    <!-- Editor catatan -->
+    <div class="modal" id="note-modal">
+        <div class="modal-content note-editor">
+            <span class="close-btn" id="note-close">&times;</span>
+            <h2 id="note-form-title">Tambah catatan</h2>
+            <form id="note-form">
+                <div class="form-group">
+                    <label for="note-date">Tanggal</label>
+                    <input type="date" id="note-date" required>
+                </div>
+                <div class="form-group">
+                    <label for="note-title">Judul <small>(opsional)</small></label>
+                    <input type="text" id="note-title" maxlength="80" placeholder="Mis. Rapat dengan tim"
+                        autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label for="note-body">Isi catatan</label>
+                    <textarea id="note-body" rows="6" maxlength="2000"
+                        placeholder="Tulis catatanmu di sini…"></textarea>
+                    <div class="note-counter" id="note-counter">0 / 2000</div>
+                </div>
+                <div class="form-group">
+                    <label>Warna</label>
+                    <div class="note-swatches" id="note-swatches"></div>
+                </div>
+                <label class="switch-row"><span>📌 Sematkan di atas</span>
+                    <input type="checkbox" class="switch" id="note-pinned"></label>
+                <div class="note-error" id="note-error" role="alert"></div>
+                <div class="note-form-actions">
+                    <button type="button" id="note-delete" class="note-delete-btn" hidden>🗑️ Hapus</button>
+                    <button type="button" id="note-cancel" class="note-cancel-btn">Batal</button>
+                    <button type="submit" class="note-save-btn">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Detail kondisi udara & cuaca -->
+    <div class="modal" id="wx-modal">
+        <div class="modal-content notes-book">
+            <span class="close-btn" id="wx-close">&times;</span>
+            <h2>🌦️ Cuaca &amp; Udara</h2>
+            <div class="wx-place">📍 Semper Barat, Jakarta Utara</div>
+            <div class="notes-chips" id="wx-tabs" style="margin-top:.7rem">
+                <button type="button" class="note-chip active" data-tab="today">Hari ini</button>
+                <button type="button" class="note-chip" data-tab="month">Bulan ini</button>
+            </div>
+            <div id="wx-pane-today">
+                <div id="wx-today"></div>
+            </div>
+            <div id="wx-pane-month" hidden>
+                <div class="wx-sub" id="wx-month-title"></div>
+                <div class="wx-month" id="wx-month"></div>
+                <div class="notes-summary" id="wx-month-note"></div>
+            </div>
+            <div class="notes-summary">Sumber: Open-Meteo. Kualitas udara memakai skala US AQI.</div>
+        </div>
+    </div>
+
     <!-- Detail jadwal solat + pengaturan alarm solat -->
     <div class="modal" id="prayer-modal">
         <div class="modal-content prayer-content">
@@ -336,7 +449,7 @@
         </div>
     </div>
 
-    <script src="script.js?v=5"></script>
+    <script src="script.js?v=7"></script>
 </body>
 
 </html>
