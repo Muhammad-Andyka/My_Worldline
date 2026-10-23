@@ -79,6 +79,9 @@ document.addEventListener('DOMContentLoaded', function() {
         'https://api.allorigins.win/raw?url=' + encodeURIComponent(HOLIDAY_API)
     ];
     const HOLIDAY_CACHE_KEY = 'holidays_cache'; // salinan terakhir hasil API (bukan data manual)
+    // Google Calendar "Hari Libur di Indonesia". Kunci ini dibatasi (HTTP referrer + hanya Calendar API) di Google Cloud.
+    const GOOGLE_API_KEY = 'AIzaSyB8x1hS9-MEsgxn81zGR_4aYk2PH89tJmQ';
+    const GOOGLE_HOLIDAY_CAL = 'id.indonesian#holiday@group.v.calendar.google.com';
     // Titik awal huruf "A": besok (19 Oktober 2026), lalu setiap 3 hari (19, 22, 25, ...)
     const A_START = new Date(2026, 9, 19);
     const A_INTERVAL = 3;
@@ -216,12 +219,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // Hasil terakhir disimpan sebagai cache supaya tetap tampil saat offline,
     // dan tahun-tahun sebelumnya tidak hilang ketika API berganti ke tahun berikutnya.
     function loadHolidays() {
-        fetchHolidayJson()
-            .then(json => {
+        Promise.allSettled([fetchGoogleHolidays(), fetchHolidayJson()])
+            .then(([g, o]) => {
+                if (g.status !== 'fulfilled' && o.status !== 'fulfilled') throw new Error('Semua sumber hari libur gagal');
+                if (g.status !== 'fulfilled') console.warn('Google hari libur gagal:', g.reason);
                 const map = {};
-                json.data.forEach(h => {
-                    map[h.date] = h.name + (h.is_cuti_bersama ? ' (Cuti Bersama)' : '');
-                });
+                if (o.status === 'fulfilled') {
+                    o.value.data.forEach(h => {
+                        map[h.date] = h.name + (h.is_cuti_bersama ? ' (Cuti Bersama)' : '');
+                    });
+                }
+                if (g.status === 'fulfilled') Object.assign(map, g.value);   // data Google diutamakan
                 holidays = Object.assign({}, readHolidayCache(), map);
                 try { localStorage.setItem(HOLIDAY_CACHE_KEY, JSON.stringify(holidays)); } catch (e) {}
                 showHolidayStatus(null);
@@ -232,6 +240,40 @@ document.addEventListener('DOMContentLoaded', function() {
                 showHolidayStatus(Object.keys(holidays).length
                     ? '⚠ Hari libur: memakai data tersimpan'
                     : '⚠ Hari libur gagal dimuat');
+            });
+    }
+
+    // Ambil libur dari Google Calendar: 2 tahun ke belakang sampai 3 tahun ke depan
+    function fetchGoogleHolidays() {
+        if (!GOOGLE_API_KEY) return Promise.reject(new Error('Kunci Google kosong'));
+        const y = new Date().getFullYear();
+        const url = 'https://www.googleapis.com/calendar/v3/calendars/' + encodeURIComponent(GOOGLE_HOLIDAY_CAL) + '/events' +
+            '?key=' + encodeURIComponent(GOOGLE_API_KEY) +
+            '&timeMin=' + encodeURIComponent((y - 2) + '-01-01T00:00:00Z') +
+            '&timeMax=' + encodeURIComponent((y + 3) + '-12-31T23:59:59Z') +
+            '&singleEvents=true&orderBy=startTime&maxResults=2500';
+        // Kirim alamat halaman lengkap sebagai referrer supaya cocok dengan batasan kunci yang memakai path
+        return fetch(url, { referrerPolicy: 'no-referrer-when-downgrade' })
+            .then(res => {
+                if (!res.ok) throw new Error('Google HTTP ' + res.status);
+                return res.json();
+            })
+            .then(json => {
+                const items = (json.items || []).filter(ev => ev.start && ev.start.date && ev.summary);
+                // Buang "peringatan" (observance) yang bukan hari libur, kecuali jika semuanya terbuang
+                const real = items.filter(ev => !/^\s*(observance|hari peringatan)/i.test(ev.description || ''));
+                const list = real.length ? real : items;
+                const map = {};
+                list.forEach(ev => {
+                    const [sy, sm, sd] = ev.start.date.split('-').map(Number);
+                    const [ey, em, ed] = (ev.end && ev.end.date ? ev.end.date : ev.start.date).split('-').map(Number);
+                    const last = ev.end && ev.end.date ? new Date(ey, em - 1, ed - 1) : new Date(sy, sm - 1, sd);
+                    for (let d = new Date(sy, sm - 1, sd); d <= last; d.setDate(d.getDate() + 1)) {
+                        map[dateKey(d)] = ev.summary;
+                    }
+                });
+                if (!Object.keys(map).length) throw new Error('Data Google kosong');
+                return map;
             });
     }
 
