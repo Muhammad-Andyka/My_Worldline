@@ -3002,3 +3002,500 @@ input.switch:focus-visible {
         grid-template-columns: repeat(2, 1fr);
     }
 }
+
+
+/* =====================================================================
+   LAMPIRAN CATATAN (FOTO & FILE)
+   ===================================================================== */
+.att-view {
+    margin-top: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    cursor: default;
+}
+
+.att-thumbs {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(5.2rem, 1fr));
+    gap: 0.4rem;
+}
+
+.att-thumb {
+    position: relative;
+    aspect-ratio: 1;
+    padding: 0;
+    border: 1px solid var(--border-color);
+    border-radius: 0.55rem;
+    background-color: var(--light-gray);
+    overflow: hidden;
+}
+
+.att-thumb:hover {
+    transform: none;
+    box-shadow: 0 0.2rem 0.7rem rgba(0, 0, 0, 0.2);
+}
+
+.att-thumb img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.att-thumb.missing::after {
+    content: '🖼️';
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    opacity: 0.5;
+}
+
+.att-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    max-width: 100%;
+    padding: 0.4rem 0.7rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.55rem;
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    font-size: 0.82rem;
+    text-align: left;
+}
+
+.att-chip:hover {
+    background-color: var(--light-gray);
+    transform: none;
+}
+
+.att-chip-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.att-chip small {
+    opacity: 0.65;
+    white-space: nowrap;
+}
+
+.note-att-count {
+    margin-top: 0.3rem;
+    font-size: 0.72rem;
+    opacity: 0.75;
+}
+
+.att-edit-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    margin-top: 0.5rem;
+}
+
+.att-edit-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.4rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.55rem;
+    background-color: var(--secondary-color);
+}
+
+.att-edit-item img,
+.att-edit-icon {
+    flex: 0 0 auto;
+    width: 2.8rem;
+    height: 2.8rem;
+    border-radius: 0.4rem;
+    object-fit: cover;
+    background-color: var(--light-gray);
+}
+
+.att-edit-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+}
+
+.att-edit-meta {
+    flex: 1;
+    min-width: 0;
+}
+
+.att-edit-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.att-edit-meta small {
+    opacity: 0.65;
+}
+
+.att-edit-remove {
+    padding: 0.3rem 0.5rem;
+    background-color: transparent;
+    color: var(--danger-color);
+    font-size: 0.95rem;
+    line-height: 1;
+}
+
+.att-edit-remove:hover {
+    background-color: var(--light-gray);
+    transform: none;
+}
+
+/* Penampil foto */
+.att-viewer {
+    background-color: rgba(0, 0, 0, 0.88);
+    z-index: 3000;
+}
+
+.att-viewer-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+
+.att-viewer-box img {
+    max-width: 92vw;
+    max-height: 82vh;
+    border-radius: 0.5rem;
+    object-fit: contain;
+}
+
+.att-viewer-name {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 1rem;
+    padding: 0 1rem;
+    color: #fff;
+    font-size: 0.85rem;
+    text-align: center;
+}
+
+.att-viewer-close,
+.att-viewer-nav {
+    position: absolute;
+    border: none;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.18);
+    color: #fff;
+    line-height: 1;
+}
+
+.att-viewer-close {
+    top: 1rem;
+    right: 1rem;
+    width: 2.6rem;
+    height: 2.6rem;
+    font-size: 1.8rem;
+}
+
+.att-viewer-nav {
+    top: 50%;
+    width: 2.8rem;
+    height: 2.8rem;
+    margin-top: -1.4rem;
+    font-size: 2rem;
+}
+
+.att-viewer-nav.prev {
+    left: 0.8rem;
+}
+
+.att-viewer-nav.next {
+    right: 0.8rem;
+}
+
+.att-viewer-nav[hidden] {
+    display: none;
+}
+
+.att-viewer-close:hover,
+.att-viewer-nav:hover {
+    background-color: rgba(255, 255, 255, 0.32);
+    transform: none;
+}
+
+.att-progress {
+    height: 0.4rem;
+    margin-top: 0.3rem;
+    border-radius: 999px;
+    background-color: var(--light-gray);
+    overflow: hidden;
+}
+
+.att-progress-fill {
+    width: 0;
+    height: 100%;
+    border-radius: 999px;
+    background-color: var(--primary-color);
+    transition: width 0.15s linear;
+}
+
+.att-progress-text {
+    display: block;
+    margin-top: 0.15rem;
+    font-size: 0.7rem;
+    opacity: 0.8;
+}
+
+.note-save-btn:disabled {
+    opacity: 0.7;
+    cursor: progress;
+}
+
+
+/* Ikon file, tampilan file hilang, seret & lepas */
+.att-file {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.65rem;
+    background-color: var(--card-bg);
+}
+
+.att-file.missing {
+    border-style: dashed;
+    border-color: var(--danger-color);
+}
+
+.att-file-ico,
+.att-edit-icon.badge {
+    --c: #858796;
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.7rem;
+    height: 2.7rem;
+    border-radius: 0.55rem;
+    background-color: var(--c);
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+}
+
+.att-file-main {
+    flex: 1;
+    min-width: 0;
+}
+
+.att-file-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.att-file-sub {
+    display: block;
+    font-size: 0.72rem;
+    opacity: 0.7;
+}
+
+.att-file.missing .att-file-sub {
+    color: var(--danger-color);
+    opacity: 1;
+    font-weight: 700;
+}
+
+.att-file-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.35rem;
+}
+
+.att-file-btn {
+    padding: 0.35rem 0.65rem;
+    border: 1px solid var(--border-color);
+    background-color: var(--secondary-color);
+    color: var(--text-color);
+    font-size: 0.75rem;
+    white-space: nowrap;
+}
+
+.att-file-btn:hover {
+    background-color: var(--light-gray);
+    transform: none;
+}
+
+.att-file-btn:disabled {
+    opacity: 0.6;
+    cursor: progress;
+}
+
+.att-file-btn.danger {
+    color: var(--danger-color);
+}
+
+.att-thumb .att-progress {
+    position: absolute;
+    left: 0.3rem;
+    right: 0.3rem;
+    bottom: 1.2rem;
+}
+
+.att-thumb .att-progress-text {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0.15rem;
+    color: #fff;
+    text-align: center;
+    text-shadow: 0 0 3px #000;
+}
+
+.att-thumb.missing {
+    border: 2px dashed var(--danger-color);
+}
+
+.att-thumb.missing::after {
+    content: '⚠';
+    color: var(--danger-color);
+    opacity: 1;
+    font-size: 1.6rem;
+}
+
+.att-progress[hidden],
+.att-progress-text[hidden] {
+    display: none;
+}
+
+.att-hint {
+    margin-top: 0.35rem;
+    font-size: 0.72rem;
+    opacity: 0.7;
+}
+
+.note-editor.dragging {
+    outline: 3px dashed var(--primary-color);
+    outline-offset: -6px;
+}
+
+.att-thumb.missing img {
+    display: none;
+}
+
+
+/* Bagikan */
+.share-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 0.8rem 0 0.4rem;
+}
+
+.share-btn {
+    display: inline-block;
+    padding: 0.55rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    background-color: var(--secondary-color);
+    color: var(--text-color);
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.share-btn:hover {
+    background-color: var(--light-gray);
+}
+
+#share-text {
+    width: 100%;
+    padding: 0.6rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    font: inherit;
+    resize: vertical;
+}
+
+.share-files {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.4rem;
+    margin-top: 0.5rem;
+}
+
+.att-share-btn {
+    padding: 0.35rem 0.65rem;
+    border: 1px solid var(--border-color);
+    background-color: var(--secondary-color);
+    color: var(--text-color);
+    font-size: 0.75rem;
+    white-space: nowrap;
+}
+
+.att-share-btn:hover {
+    background-color: var(--light-gray);
+    transform: none;
+}
+
+.att-viewer-share {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    padding: 0.5rem 0.9rem;
+    border: none;
+    border-radius: 999px;
+    background-color: rgba(255, 255, 255, .18);
+    color: #fff;
+    font-size: 0.85rem;
+}
+
+.att-viewer-share:hover {
+    background-color: rgba(255, 255, 255, .32);
+    transform: none;
+}
+
+.app-toast {
+    position: fixed;
+    left: 50%;
+    bottom: 1.2rem;
+    z-index: 4000;
+    max-width: 90vw;
+    padding: 0.65rem 1rem;
+    border-radius: 0.6rem;
+    background-color: #2d3748;
+    color: #fff;
+    font-size: 0.85rem;
+    opacity: 0;
+    transform: translate(-50%, 1rem);
+    pointer-events: none;
+    transition: opacity 0.2s, transform 0.2s;
+}
+
+.app-toast.show {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
+.a-badge.c-badge.c2 {
+    background-color: #36b9cc;
+}
