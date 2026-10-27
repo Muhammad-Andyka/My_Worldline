@@ -17,7 +17,7 @@
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- ?v=3 memaksa browser mengambil file terbaru. Naikkan angkanya (v=4, v=5, ...) setiap kali style.css / script.js diubah -->
-    <link rel="stylesheet" href="style.css?v=9">
+    <link rel="stylesheet" href="style.css?v=16">
 </head>
 
 <body>
@@ -297,6 +297,15 @@
                     <label>Warna</label>
                     <div class="note-swatches" id="note-swatches"></div>
                 </div>
+                <div class="form-group">
+                    <label>Lampiran <small>(foto / file)</small></label>
+                    <button type="button" id="att-add" class="note-ghost-btn">📎 Tambah foto / file</button>
+                    <div class="att-hint">Bisa pilih <b>banyak file sekaligus</b> (foto, PDF, RAR, dll.) atau seret file
+                        ke jendela ini.</div>
+                    <input type="file" id="att-input" multiple hidden>
+                    <div class="att-edit-list" id="att-edit-list"></div>
+                    <div class="note-counter" id="att-info"></div>
+                </div>
                 <label class="switch-row"><span>📌 Sematkan di atas</span>
                     <input type="checkbox" class="switch" id="note-pinned"></label>
                 <div class="note-error" id="note-error" role="alert"></div>
@@ -328,6 +337,35 @@
                 <div class="notes-summary" id="wx-month-note"></div>
             </div>
             <div class="notes-summary">Sumber: Open-Meteo. Kualitas udara memakai skala US AQI.</div>
+        </div>
+    </div>
+
+    <!-- Penampil foto lampiran -->
+    <div class="modal att-viewer" id="att-viewer">
+        <div class="att-viewer-box">
+            <button type="button" class="att-viewer-close" id="att-viewer-close" aria-label="Tutup">&times;</button>
+            <button type="button" class="att-viewer-share" id="att-viewer-share">📤 Bagikan</button>
+            <button type="button" class="att-viewer-nav prev" id="att-viewer-prev" aria-label="Sebelumnya">‹</button>
+            <img id="att-viewer-img" alt="">
+            <button type="button" class="att-viewer-nav next" id="att-viewer-next" aria-label="Berikutnya">›</button>
+            <div class="att-viewer-name" id="att-viewer-name"></div>
+        </div>
+    </div>
+
+    <!-- Bagikan (cadangan jika perangkat tidak punya menu bagikan) -->
+    <div class="modal" id="share-modal">
+        <div class="modal-content note-editor">
+            <span class="close-btn" id="share-close">&times;</span>
+            <h2>📤 Bagikan</h2>
+            <textarea id="share-text" rows="6" readonly></textarea>
+            <div class="share-actions">
+                <a id="share-wa" class="share-btn" target="_blank" rel="noopener">WhatsApp</a>
+                <a id="share-tg" class="share-btn" target="_blank" rel="noopener">Telegram</a>
+                <a id="share-mail" class="share-btn">Email</a>
+                <button type="button" id="share-copy" class="share-btn">Salin teks</button>
+            </div>
+            <div class="att-hint">Instagram dan TikTok hanya bisa menerima foto/video lewat menu bagikan di HP.</div>
+            <div class="share-files" id="share-files"></div>
         </div>
     </div>
 
@@ -449,7 +487,7 @@
         </div>
     </div>
 
-    <script src="script.js?v=9"></script>
+    <script src="script.js?v=16"></script>
 </body>
 
 </html>
