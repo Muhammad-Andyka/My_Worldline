@@ -1032,6 +1032,17 @@ document.addEventListener('DOMContentLoaded', function() {
         return badge;
     }
 
+    // Ikon garis (SVG) untuk tombol catatan
+    function noteIcon(name) {
+        const open = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">';
+        const paths = {
+            pin: '<path d="M12 17v5"/><path d="M9 3h6l-1 6 3 3v2H7v-2l3-3-1-6z"/>',
+            share: '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 10.5l6.8-4M8.6 13.5l6.8 4"/>',
+            trash: '<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/><path d="M10 11v5M14 11v5"/>'
+        };
+        return open + (paths[name] || '') + '</svg>';
+    }
+
     function createNoteCard(note, key, opts) {
         opts = opts || {};
         const card = document.createElement('div');
@@ -1086,21 +1097,21 @@ document.addEventListener('DOMContentLoaded', function() {
             const pin = document.createElement('button');
             pin.type = 'button';
             pin.className = 'note-icon-btn' + (note.pinned ? ' on' : '');
-            pin.textContent = '📌';
+            pin.innerHTML = noteIcon('pin');
             pin.title = note.pinned ? 'Lepas sematan' : 'Sematkan di atas';
             pin.setAttribute('aria-label', pin.title);
             pin.addEventListener('click', e => { e.stopPropagation(); patchNote(key, note.id, { pinned: !note.pinned }); });
             const del = document.createElement('button');
             del.type = 'button';
             del.className = 'note-icon-btn';
-            del.textContent = '🗑️';
+            del.innerHTML = noteIcon('trash');
             del.title = 'Hapus catatan';
             del.setAttribute('aria-label', 'Hapus catatan');
             del.addEventListener('click', e => { e.stopPropagation(); deleteNote(key, note.id); });
             const share = document.createElement('button');
             share.type = 'button';
             share.className = 'note-icon-btn';
-            share.textContent = '📤';
+            share.innerHTML = noteIcon('share');
             share.title = 'Bagikan catatan';
             share.setAttribute('aria-label', 'Bagikan catatan');
             share.addEventListener('click', e => { e.stopPropagation(); shareNote(key, note); });
@@ -1538,8 +1549,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (images.length) {
             const grid = document.createElement('div');
-            grid.className = 'att-thumbs';
-            images.forEach((f, i) => {
+            const shown = Math.min(images.length, 6);
+            grid.className = 'att-thumbs n' + shown;
+            images.slice(0, shown).forEach((f, i) => {
                 const b = document.createElement('button');
                 b.type = 'button';
                 b.className = 'att-thumb';
@@ -1560,6 +1572,12 @@ document.addEventListener('DOMContentLoaded', function() {
                         if (confirm('Foto "' + f.name + '" tidak ada di perangkat ini.\n\nPilih file foto itu lagi dari perangkat?\n(Batal = biarkan)')) attRelink(f, ui);
                     } else openViewer(images, i);
                 });
+                if (i === shown - 1 && images.length > shown) {
+                    const more = document.createElement('span');
+                    more.className = 'att-more';
+                    more.textContent = '+' + (images.length - shown + 1);
+                    b.appendChild(more);
+                }
                 grid.appendChild(b);
             });
             wrap.appendChild(grid);
