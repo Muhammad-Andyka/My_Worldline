@@ -123,11 +123,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const PRAYER_CITY_ID = 1301;               // KOTA JAKARTA di MyQuran
     const PRAYER_CACHE_KEY = 'prayer_times_v1';
     const PRAYERS = [
-        { key: 'subuh', name: 'Subuh', icon: '🌌' },
-        { key: 'dzuhur', name: 'Dzuhur', icon: '☀️' },
-        { key: 'ashar', name: 'Ashar', icon: '🌤️' },
-        { key: 'maghrib', name: 'Maghrib', icon: '🌇' },
-        { key: 'isya', name: 'Isya', icon: '🌙' }
+        { key: 'subuh', name: 'Subuh', icon: '馃寣' },
+        { key: 'dzuhur', name: 'Dzuhur', icon: '鈽�锔�' },
+        { key: 'ashar', name: 'Ashar', icon: '馃尋锔�' },
+        { key: 'maghrib', name: 'Maghrib', icon: '馃寚' },
+        { key: 'isya', name: 'Isya', icon: '馃寵' }
     ];
     const PRAYER_DEFAULTS = {
         master: true, sound: true, notif: true, before: 0, volume: 80,
@@ -156,14 +156,14 @@ document.addEventListener('DOMContentLoaded', function() {
     let wxData = null;
 
     const WX_CODES = {
-        0: ['☀️', 'Cerah'], 1: ['🌤️', 'Cerah berawan'], 2: ['⛅', 'Berawan sebagian'], 3: ['☁️', 'Berawan'],
-        45: ['🌫️', 'Kabut'], 48: ['🌫️', 'Kabut'],
-        51: ['🌦️', 'Gerimis ringan'], 53: ['🌦️', 'Gerimis'], 55: ['🌦️', 'Gerimis lebat'],
-        56: ['🌦️', 'Gerimis beku'], 57: ['🌦️', 'Gerimis beku'],
-        61: ['🌧️', 'Hujan ringan'], 63: ['🌧️', 'Hujan sedang'], 65: ['🌧️', 'Hujan lebat'],
-        66: ['🌧️', 'Hujan beku'], 67: ['🌧️', 'Hujan beku'],
-        80: ['🌦️', 'Hujan lokal ringan'], 81: ['🌧️', 'Hujan lokal'], 82: ['⛈️', 'Hujan lokal lebat'],
-        95: ['⛈️', 'Badai petir'], 96: ['⛈️', 'Petir & es'], 99: ['⛈️', 'Petir & es lebat']
+        0: ['鈽�锔�', 'Cerah'], 1: ['馃尋锔�', 'Cerah berawan'], 2: ['鉀�', 'Berawan sebagian'], 3: ['鈽侊笍', 'Berawan'],
+        45: ['馃尗锔�', 'Kabut'], 48: ['馃尗锔�', 'Kabut'],
+        51: ['馃對锔�', 'Gerimis ringan'], 53: ['馃對锔�', 'Gerimis'], 55: ['馃對锔�', 'Gerimis lebat'],
+        56: ['馃對锔�', 'Gerimis beku'], 57: ['馃對锔�', 'Gerimis beku'],
+        61: ['馃導锔�', 'Hujan ringan'], 63: ['馃導锔�', 'Hujan sedang'], 65: ['馃導锔�', 'Hujan lebat'],
+        66: ['馃導锔�', 'Hujan beku'], 67: ['馃導锔�', 'Hujan beku'],
+        80: ['馃對锔�', 'Hujan lokal ringan'], 81: ['馃導锔�', 'Hujan lokal'], 82: ['鉀堬笍', 'Hujan lokal lebat'],
+        95: ['鉀堬笍', 'Badai petir'], 96: ['鉀堬笍', 'Petir & es'], 99: ['鉀堬笍', 'Petir & es lebat']
     };
 
     // Catatan harian: { 'YYYY-MM-DD': [ { id, title, body, color, pinned, done, createdAt, updatedAt } ] }
@@ -246,8 +246,8 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(err => {
                 console.warn(err);
                 showHolidayStatus(Object.keys(holidays).length
-                    ? '⚠ Hari libur: memakai data tersimpan'
-                    : '⚠ Hari libur gagal dimuat');
+                    ? '鈿� Hari libur: memakai data tersimpan'
+                    : '鈿� Hari libur gagal dimuat');
             });
     }
 
@@ -330,29 +330,16 @@ document.addEventListener('DOMContentLoaded', function() {
         return Math.floor((first + date.getDate() - 1) / 7) + 1;
     }
 
-    // Minggu bersiklus A yang "menghasilkan" huruf C di hari Selasa-nya:
-    // baris 2, 3, 4 dan baris terakhir (5/6) pada grid bulan.
+    // Cadangan (C): saat hari Minggu bersiklus A (masuk) jatuh di minggu ke-2, 3, atau 4 bulannya
+    // (minggu 1 = tgl 1-7, minggu 2 = 8-14, minggu 3 = 15-21, minggu 4 = 22-28), maka Selasa-nya cadangan.
+    // Siklus A berulang tiap 21 hari, jadi setiap bulan pasti tepat ada satu cadangan.
     function isCadanganSunday(sunday) {
-        const row = getWeekRowInMonth(sunday);
-        if (row >= 2 && row <= 4) return true;
-        const y = sunday.getFullYear(), m = sunday.getMonth();
-        const lastRow = getWeekRowInMonth(new Date(y, m + 1, 0));
-        return row >= 5 && row === lastRow;
-    }
-
-    // 1 = cadangan pertama di bulan itu, 2 = cadangan berikutnya (susulan)
-    function cadanganOrder(sunday) {
-        const y = sunday.getFullYear(), m = sunday.getMonth();
-        for (let d = 1; d < sunday.getDate(); d++) {
-            const x = new Date(y, m, d);
-            if (x.getDay() === 0 && isCycleA(x) && isCadanganSunday(x)) return 2;
-        }
-        return 1;
+        const d = sunday.getDate();
+        return d >= 8 && d <= 28;
     }
 
     function hasA(date) {
         if (isCycleA(date)) return true;
-        // Hari Selasa setelah Minggu A yang memenuhi aturan di atas mendapat huruf C
         if (date.getDay() === 2) {
             const sunday = new Date(date.getFullYear(), date.getMonth(), date.getDate() - 2);
             if (isCycleA(sunday) && sunday.getDay() === 0 && isCadanganSunday(sunday)) return true;
@@ -384,7 +371,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const el = document.createElement('div');
         el.className = 'piket-event';
         el.innerHTML = withTime
-            ? `<strong>Piket</strong> ${slot.time} • ${escapeHtml(slot.names)}`
+            ? `<strong>Piket</strong> ${slot.time} 鈥� ${escapeHtml(slot.names)}`
             : escapeHtml(slot.names);
         el.addEventListener('click', e => e.stopPropagation());
         return el;
@@ -405,10 +392,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const badge = document.createElement('span');
         // Selasa setelah Minggu (baris 2-4) yang jatuh pada siklus A = huruf "C" (cadangan)
         const isC = !!date && !isCycleA(date);
-        const order = isC ? cadanganOrder(new Date(date.getFullYear(), date.getMonth(), date.getDate() - 2)) : 0;
-        badge.className = 'a-badge' + (isC ? ' c-badge' + (order === 2 ? ' c2' : '') : '');
+        badge.className = 'a-badge' + (isC ? ' c-badge' : '');
         badge.textContent = isC ? 'C' : 'A';
-        if (isC) { badge.title = order === 2 ? 'Cadangan susulan (kedua di bulan ini)' : 'Cadangan pertama bulan ini'; return badge; }
+        if (isC) { badge.title = 'Cadangan bulan ini'; return badge; }
         const piket = date ? getPiket(date) : null;
         if (piket) {
             const besok = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
@@ -457,7 +443,7 @@ document.addEventListener('DOMContentLoaded', function() {
         a.click();
         a.remove();
         setTimeout(() => URL.revokeObjectURL(url), 1000);
-        showBackupStatus(`✔ ${events.length} acara dan ${countAllNotes()} catatan diekspor.` + attNote);
+        showBackupStatus(`鉁� ${events.length} acara dan ${countAllNotes()} catatan diekspor.` + attNote);
     }
 
     // Rapikan & validasi satu acara dari file backup
@@ -506,9 +492,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const freshNotes = collectImportNotes(noteSource);
             const ok = confirm(
                 `Ditemukan ${valid.length} acara di file ini:\n` +
-                `• ${fresh.length} acara baru akan ditambahkan\n` +
-                `• ${valid.length - fresh.length} acara sudah ada (dilewati)\n` +
-                (noteSource ? `• ${freshNotes.length} catatan baru akan ditambahkan\n` : '') + '\n' +
+                `鈥� ${fresh.length} acara baru akan ditambahkan\n` +
+                `鈥� ${valid.length - fresh.length} acara sudah ada (dilewati)\n` +
+                (noteSource ? `鈥� ${freshNotes.length} catatan baru akan ditambahkan\n` : '') + '\n' +
                 'Data yang sudah ada di kalender tidak akan dihapus. Lanjutkan?'
             );
             if (!ok) return;
@@ -523,7 +509,7 @@ document.addEventListener('DOMContentLoaded', function() {
             renderCalendar();
             renderEventsList();
             renderNotesPanel();
-            showBackupStatus(`✔ ${fresh.length} acara` + (noteSource ? ` dan ${freshNotes.length} catatan` : '') + ' berhasil dipulihkan.');
+            showBackupStatus(`鉁� ${fresh.length} acara` + (noteSource ? ` dan ${freshNotes.length} catatan` : '') + ' berhasil dipulihkan.');
         };
         reader.readAsText(file);
     }
@@ -574,7 +560,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function soundLabel(snd, fallback) {
         return snd
-            ? `🎵 ${snd.name} (${fmtTime(snd.start)} – ${snd.end ? fmtTime(snd.end) : 'akhir'})`
+            ? `馃幍 ${snd.name} (${fmtTime(snd.start)} 鈥� ${snd.end ? fmtTime(snd.end) : 'akhir'})`
             : fallback;
     }
 
@@ -582,9 +568,9 @@ document.addEventListener('DOMContentLoaded', function() {
     async function loadCustomSound() {
         customSound = await readSoundRecord('alarmSound', customSound);
         prayerSound = await readSoundRecord('prayerSound', prayerSound);
-        if (alarmSoundName) alarmSoundName.textContent = soundLabel(customSound, '🎵 Nada bawaan (lonceng)');
+        if (alarmSoundName) alarmSoundName.textContent = soundLabel(customSound, '馃幍 Nada bawaan (lonceng)');
         const prayerName = document.getElementById('prayer-sound-name');
-        if (prayerName) prayerName.textContent = soundLabel(prayerSound, '🕌 Nada bawaan (lembut)');
+        if (prayerName) prayerName.textContent = soundLabel(prayerSound, '馃晫 Nada bawaan (lembut)');
     }
 
     function showAlarmStatus(message, isError) {
@@ -626,9 +612,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function updateTestButton() {
         const prayerPreview = !!(ringer && ringer.preview && ringer.kind === 'prayer');
-        if (alarmTestBtn) alarmTestBtn.textContent = ringer && ringer.preview && !prayerPreview ? '⏹ Stop' : '▶ Coba';
+        if (alarmTestBtn) alarmTestBtn.textContent = ringer && ringer.preview && !prayerPreview ? '鈴� Stop' : '鈻� Coba';
         const prayerTest = document.getElementById('prayer-test-btn');
-        if (prayerTest) prayerTest.textContent = prayerPreview ? '⏹ Stop' : '▶ Coba';
+        if (prayerTest) prayerTest.textContent = prayerPreview ? '鈴� Stop' : '鈻� Coba';
     }
 
     // Menyalakan suara + getar. Berulang terus sampai alarm dimatikan / ditunda.
@@ -808,7 +794,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!slot) return null;
         return {
             id: 'piket-' + startMs,
-            title: '🌙 Piket ' + slot.time,
+            title: '馃寵 Piket ' + slot.time,
             startTime: start.toISOString(),
             endTime: new Date(startMs + 2 * 3600000).toISOString(),
             description: 'Bertugas: ' + slot.names,
@@ -862,7 +848,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const d = new Date(slot.startMs);
         el.textContent = (piketWho === 'all' ? 'Piket berikutnya: ' : 'Piket berikutnya untuk ' + piketWho + ': ') +
             d.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short' }) +
-            ' • ' + slot.time + (piketWho === 'all' ? ' (' + slot.names + ')' : '');
+            ' 鈥� ' + slot.time + (piketWho === 'all' ? ' (' + slot.names + ')' : '');
     }
 
     function initPiketAlarm() {
@@ -897,7 +883,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 Notification.requestPermission().then(updateNotifButton).catch(() => {});
             }
             showAlarmStatus(piketWho
-                ? '✔ Alarm piket aktif untuk ' + (piketWho === 'all' ? 'semua orang' : piketWho) + '.'
+                ? '鉁� Alarm piket aktif untuk ' + (piketWho === 'all' ? 'semua orang' : piketWho) + '.'
                 : 'Alarm piket dimatikan.');
         });
 
@@ -1026,9 +1012,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!n) return null;
         const badge = document.createElement('span');
         badge.className = 'note-badge';
-        badge.textContent = '📝 ' + n;
-        const first = sortedNotes(key).slice(0, 3).map(x => '• ' + (x.title.trim() || x.body.trim()).slice(0, 40));
-        badge.title = `${n} catatan:\n` + first.join('\n') + (n > 3 ? '\n…' : '');
+        badge.textContent = '馃摑 ' + n;
+        const first = sortedNotes(key).slice(0, 3).map(x => '鈥� ' + (x.title.trim() || x.body.trim()).slice(0, 40));
+        badge.title = `${n} catatan:\n` + first.join('\n') + (n > 3 ? '\n鈥�' : '');
         return badge;
     }
 
@@ -1076,7 +1062,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (opts.compact) {
                 const c = document.createElement('div');
                 c.className = 'note-att-count';
-                c.textContent = '📎 ' + note.files.length + ' lampiran';
+                c.textContent = '馃搸 ' + note.files.length + ' lampiran';
                 main.appendChild(c);
             } else {
                 main.appendChild(createAttachmentsView(note.files, key, note.id));
@@ -1084,7 +1070,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         const meta = document.createElement('div');
         meta.className = 'note-meta';
-        meta.textContent = (note.pinned ? '📌 ' : '') + (opts.showDate ? noteDateLabel(key, true) + ' • ' : '') +
+        meta.textContent = (note.pinned ? '馃搶 ' : '') + (opts.showDate ? noteDateLabel(key, true) + ' 鈥� ' : '') +
             'Diubah ' + noteTimeLabel(note.updatedAt);
         main.appendChild(meta);
 
@@ -1137,7 +1123,7 @@ document.addEventListener('DOMContentLoaded', function() {
         head.className = 'notes-section-head';
         const title = document.createElement('div');
         title.className = 'notes-section-title';
-        title.textContent = '📝 Catatan';
+        title.textContent = '馃摑 Catatan';
         const pill = document.createElement('span');
         pill.className = 'notes-count-pill';
         pill.textContent = items.length;
@@ -1145,7 +1131,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const add = document.createElement('button');
         add.type = 'button';
         add.className = 'note-add-btn';
-        add.textContent = '＋ Tambah catatan';
+        add.textContent = '锛� Tambah catatan';
         add.addEventListener('click', () => openNoteEditor(key));
         head.appendChild(title);
         head.appendChild(add);
@@ -1233,7 +1219,7 @@ document.addEventListener('DOMContentLoaded', function() {
             head.className = 'notes-group-head';
             head.title = 'Buka tampilan hari ini';
             const label = document.createElement('span');
-            label.textContent = noteDateLabel(key) + (key === todayKey ? ' • Hari ini' : '');
+            label.textContent = noteDateLabel(key) + (key === todayKey ? ' 鈥� Hari ini' : '');
             const count = document.createElement('span');
             count.className = 'notes-count-pill';
             count.textContent = items.length;
@@ -1250,7 +1236,7 @@ document.addEventListener('DOMContentLoaded', function() {
             empty.className = 'notes-empty big';
             empty.textContent = countAllNotes()
                 ? 'Tidak ada catatan yang cocok dengan pencarian atau filter ini.'
-                : 'Belum ada catatan. Tekan "＋ Catatan" untuk mulai menulis.';
+                : 'Belum ada catatan. Tekan "锛� Catatan" untuk mulai menulis.';
             list.appendChild(empty);
         }
         summary.textContent = total ? `${total} catatan di ${days} hari` : '';
@@ -1321,11 +1307,11 @@ document.addEventListener('DOMContentLoaded', function() {
         saveBtn.disabled = true;
         try {
             for (const f of todo) {
-                saveBtn.textContent = `Menyimpan… ${Math.round(savedBytes / totalBytes * 100)}%`;
+                saveBtn.textContent = `Menyimpan鈥� ${Math.round(savedBytes / totalBytes * 100)}%`;
                 await attPut(f.id, f.blob, f.name, f.type);
                 savedBytes += f.size;
             }
-            saveBtn.textContent = todo.length ? 'Menyimpan… 100%' : saveLabel;
+            saveBtn.textContent = todo.length ? 'Menyimpan鈥� 100%' : saveLabel;
             saveBtn.disabled = false;
             saveBtn.textContent = saveLabel;
         } catch (e) {
@@ -1387,14 +1373,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function fileIcon(type, name) {
-        if (/^image\//.test(type)) return '🖼️';
-        if (/^video\//.test(type)) return '🎬';
-        if (/^audio\//.test(type)) return '🎵';
-        if (/pdf/.test(type) || /\.pdf$/i.test(name)) return '📕';
-        if (/sheet|excel|csv/.test(type) || /\.(xlsx?|csv)$/i.test(name)) return '📊';
-        if (/word|document|rtf/.test(type) || /\.(docx?|rtf)$/i.test(name)) return '📘';
-        if (/zip|rar|7z|tar/.test(type) || /\.(zip|rar|7z|tar|gz)$/i.test(name)) return '🗜️';
-        return '📄';
+        if (/^image\//.test(type)) return '馃柤锔�';
+        if (/^video\//.test(type)) return '馃幀';
+        if (/^audio\//.test(type)) return '馃幍';
+        if (/pdf/.test(type) || /\.pdf$/i.test(name)) return '馃摃';
+        if (/sheet|excel|csv/.test(type) || /\.(xlsx?|csv)$/i.test(name)) return '馃搳';
+        if (/word|document|rtf/.test(type) || /\.(docx?|rtf)$/i.test(name)) return '馃摌';
+        if (/zip|rar|7z|tar/.test(type) || /\.(zip|rar|7z|tar|gz)$/i.test(name)) return '馃棞锔�';
+        return '馃搫';
     }
 
     // Foto dikecilkan (maks 1600 px) supaya hemat tempat; file lain disimpan apa adanya
@@ -1607,13 +1593,13 @@ document.addEventListener('DOMContentLoaded', function() {
             const dl = document.createElement('button');
             dl.type = 'button';
             dl.className = 'att-file-btn';
-            dl.textContent = '⬇ Unduh';
+            dl.textContent = '猬� Unduh';
             dl.addEventListener('click', () => { dl.disabled = true; downloadAttachment(f, ui).then(() => { dl.disabled = false; }); });
             actions.appendChild(dl);
             const sh = document.createElement('button');
             sh.type = 'button';
             sh.className = 'att-share-btn';
-            sh.textContent = '📤 Bagikan';
+            sh.textContent = '馃摛 Bagikan';
             sh.addEventListener('click', () => shareFile(f));
             actions.appendChild(sh);
             row.append(ico, main, actions);
@@ -1624,8 +1610,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (ok) return;
                 row.classList.add('missing');
                 sh.remove();
-                sub.textContent = '⚠ File tidak ada di perangkat ini';
-                dl.textContent = '📁 Pilih file lagi';
+                sub.textContent = '鈿� File tidak ada di perangkat ini';
+                dl.textContent = '馃搧 Pilih file lagi';
                 dl.onclick = null;
                 const fresh = dl.cloneNode(true);
                 dl.replaceWith(fresh);
@@ -1633,7 +1619,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const del = document.createElement('button');
                 del.type = 'button';
                 del.className = 'att-file-btn danger';
-                del.textContent = '✕ Hapus';
+                del.textContent = '鉁� Hapus';
                 del.addEventListener('click', () => removeFromNote(f));
                 actions.appendChild(del);
             });
@@ -1671,7 +1657,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const bd = fileBadge(f.type, f.name);
                 ic.className = 'att-edit-icon badge';
                 ic.style.setProperty('--c', bd.color);
-                ic.textContent = f.pending && /^image\//.test(f.type) ? '🖼️' : bd.label;
+                ic.textContent = f.pending && /^image\//.test(f.type) ? '馃柤锔�' : bd.label;
                 item.appendChild(ic);
             }
             const meta = document.createElement('div');
@@ -1699,7 +1685,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const rm = document.createElement('button');
             rm.type = 'button';
             rm.className = 'att-edit-remove';
-            rm.textContent = '✕';
+            rm.textContent = '鉁�';
             rm.title = 'Hapus lampiran';
             rm.setAttribute('aria-label', 'Hapus lampiran ' + f.name);
             rm.addEventListener('click', () => {
@@ -1716,7 +1702,7 @@ document.addEventListener('DOMContentLoaded', function() {
         info.textContent = base;
         try {
             if (navigator.storage && navigator.storage.estimate) navigator.storage.estimate().then(e => {
-                if (e && e.quota) info.textContent = (base ? base + ' • ' : '') + 'Ruang tersisa ± ' + fmtSize(Math.max(0, e.quota - (e.usage || 0)));
+                if (e && e.quota) info.textContent = (base ? base + ' 鈥� ' : '') + 'Ruang tersisa 卤 ' + fmtSize(Math.max(0, e.quota - (e.usage || 0)));
             });
         } catch (e) {}
     }
@@ -1745,7 +1731,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (info && pend.length) {
             const total = pend.reduce((a, x) => a + (x.size || 1), 0);
             const done = pend.reduce((a, x) => a + (x.size || 1) * x.progress / 100, 0);
-            info.textContent = `Memproses ${pend.length} file… ${Math.round(done / total * 100)}%`;
+            info.textContent = `Memproses ${pend.length} file鈥� ${Math.round(done / total * 100)}%`;
         }
     }
 
@@ -1849,10 +1835,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // ===== Bagikan catatan / file =====
     function noteShareText(key, note) {
         const parts = [];
-        if (note.title.trim()) parts.push('📝 ' + note.title.trim());
-        parts.push('📅 ' + noteDateLabel(key));
+        if (note.title.trim()) parts.push('馃摑 ' + note.title.trim());
+        parts.push('馃搮 ' + noteDateLabel(key));
         if (note.body.trim()) parts.push('', note.body.trim());
-        if (note.files && note.files.length) parts.push('', '📎 ' + note.files.length + ' lampiran');
+        if (note.files && note.files.length) parts.push('', '馃搸 ' + note.files.length + ' lampiran');
         return parts.join('\n');
     }
 
@@ -1926,7 +1912,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const b = document.createElement('button');
                 b.type = 'button';
                 b.className = 'att-file-btn';
-                b.textContent = '⬇ ' + f.name;
+                b.textContent = '猬� ' + f.name;
                 b.addEventListener('click', () => downloadAttachment(f, null));
                 list.appendChild(b);
             });
@@ -2008,7 +1994,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // ===== Kondisi udara & cuaca (Open-Meteo, tanpa API key) =====
-    function wxInfo(code) { return WX_CODES[code] || ['🌡️', 'Tidak diketahui']; }
+    function wxInfo(code) { return WX_CODES[code] || ['馃尅锔�', 'Tidak diketahui']; }
 
     // Skala US AQI
     function aqiInfo(v) {
@@ -2059,11 +2045,11 @@ document.addEventListener('DOMContentLoaded', function() {
             renderWeather();
         }).catch(() => {
             const el = document.getElementById('wx-status');
-            if (el) el.textContent = wxData ? '⚠ Gagal memperbarui, memakai data terakhir' : '⚠ Cuaca gagal dimuat (cek koneksi)';
+            if (el) el.textContent = wxData ? '鈿� Gagal memperbarui, memakai data terakhir' : '鈿� Cuaca gagal dimuat (cek koneksi)';
         });
     }
 
-    function wxNum(v, d) { return v == null || isNaN(v) ? '–' : Number(v).toFixed(d || 0); }
+    function wxNum(v, d) { return v == null || isNaN(v) ? '鈥�' : Number(v).toFixed(d || 0); }
 
     function renderWeather() {
         const card = document.getElementById('wx-card');
@@ -2073,15 +2059,15 @@ document.addEventListener('DOMContentLoaded', function() {
         if (cur) {
             const [icon, label] = wxInfo(cur.weather_code);
             document.getElementById('wx-icon').textContent = icon;
-            document.getElementById('wx-temp').textContent = wxNum(cur.temperature_2m) + '°C';
+            document.getElementById('wx-temp').textContent = wxNum(cur.temperature_2m) + '掳C';
             document.getElementById('wx-desc').textContent = label;
             document.getElementById('wx-extra').textContent =
-                `Terasa ${wxNum(cur.apparent_temperature)}° • Lembap ${wxNum(cur.relative_humidity_2m)}% • Angin ${wxNum(cur.wind_speed_10m)} km/j`;
+                `Terasa ${wxNum(cur.apparent_temperature)}掳 鈥� Lembap ${wxNum(cur.relative_humidity_2m)}% 鈥� Angin ${wxNum(cur.wind_speed_10m)} km/j`;
         }
         const aqi = aqiInfo(air ? air.us_aqi : null);
         const badge = document.getElementById('wx-aqi');
         badge.style.setProperty('--aqi-color', aqi.color);
-        document.getElementById('wx-aqi-val').textContent = air && air.us_aqi != null ? Math.round(air.us_aqi) : '–';
+        document.getElementById('wx-aqi-val').textContent = air && air.us_aqi != null ? Math.round(air.us_aqi) : '鈥�';
         document.getElementById('wx-aqi-label').textContent = aqi.label;
         const st = document.getElementById('wx-status');
         st.textContent = wxData.fetchedAt
@@ -2104,17 +2090,17 @@ document.addEventListener('DOMContentLoaded', function() {
             const [icon, label] = wxInfo(cur.weather_code);
             const hero = document.createElement('div');
             hero.className = 'wx-hero';
-            hero.innerHTML = `<div class="wx-hero-icon">${icon}</div><div><div class="wx-hero-temp">${wxNum(cur.temperature_2m)}°C</div>` +
-                `<div>${label}</div><div class="wx-hero-sub">Terasa ${wxNum(cur.apparent_temperature)}° • Lembap ${wxNum(cur.relative_humidity_2m)}% • Angin ${wxNum(cur.wind_speed_10m)} km/j</div></div>`;
+            hero.innerHTML = `<div class="wx-hero-icon">${icon}</div><div><div class="wx-hero-temp">${wxNum(cur.temperature_2m)}掳C</div>` +
+                `<div>${label}</div><div class="wx-hero-sub">Terasa ${wxNum(cur.apparent_temperature)}掳 鈥� Lembap ${wxNum(cur.relative_humidity_2m)}% 鈥� Angin ${wxNum(cur.wind_speed_10m)} km/j</div></div>`;
             box.appendChild(hero);
         }
         const aqi = aqiInfo(air ? air.us_aqi : null);
         const aq = document.createElement('div');
         aq.className = 'wx-aq';
         aq.style.setProperty('--aqi-color', aqi.color);
-        const pol = air ? [['PM2.5', air.pm2_5, 'µg/m³'], ['PM10', air.pm10, 'µg/m³'], ['O₃', air.ozone, 'µg/m³'],
-            ['NO₂', air.nitrogen_dioxide, 'µg/m³'], ['SO₂', air.sulphur_dioxide, 'µg/m³'], ['CO', air.carbon_monoxide, 'µg/m³']] : [];
-        aq.innerHTML = `<div class="wx-aq-head"><span class="wx-aq-val">${air && air.us_aqi != null ? Math.round(air.us_aqi) : '–'}</span>` +
+        const pol = air ? [['PM2.5', air.pm2_5, '碌g/m鲁'], ['PM10', air.pm10, '碌g/m鲁'], ['O鈧�', air.ozone, '碌g/m鲁'],
+            ['NO鈧�', air.nitrogen_dioxide, '碌g/m鲁'], ['SO鈧�', air.sulphur_dioxide, '碌g/m鲁'], ['CO', air.carbon_monoxide, '碌g/m鲁']] : [];
+        aq.innerHTML = `<div class="wx-aq-head"><span class="wx-aq-val">${air && air.us_aqi != null ? Math.round(air.us_aqi) : '鈥�'}</span>` +
             `<div><div class="wx-aq-title">Kualitas Udara (US AQI)</div><div class="wx-aq-label"></div></div></div>` +
             `<div class="wx-aq-tip"></div><div class="wx-pol">` +
             pol.map(p => `<div><span>${p[0]}</span><strong>${wxNum(p[1], 1)}</strong><small>${p[2]}</small></div>`).join('') + '</div>';
@@ -2136,7 +2122,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const item = document.createElement('div');
                 item.className = 'wx-hour' + (i === 0 ? ' now' : '');
                 item.innerHTML = `<span>${i === 0 ? 'Kini' : t.slice(11, 16)}</span><div>${wxInfo(hourly.weather_code[k])[0]}</div>` +
-                    `<strong>${wxNum(hourly.temperature_2m[k])}°</strong><small>💧${wxNum(hourly.precipitation_probability[k])}%</small>`;
+                    `<strong>${wxNum(hourly.temperature_2m[k])}掳</strong><small>馃挧${wxNum(hourly.precipitation_probability[k])}%</small>`;
                 strip.appendChild(item);
             });
             box.appendChild(strip);
@@ -2163,20 +2149,20 @@ document.addEventListener('DOMContentLoaded', function() {
             const cell = document.createElement('div');
             cell.className = 'wx-day' + (key === todayKey ? ' today' : '') + (key < todayKey ? ' past' : '');
             if (i == null) {
-                cell.innerHTML = `<b>${d}</b><div class="wx-na">–</div>`;
+                cell.innerHTML = `<b>${d}</b><div class="wx-na">鈥�</div>`;
                 cell.title = 'Prakiraan belum tersedia';
             } else {
                 const [icon, label] = wxInfo(dl.weather_code[i]);
                 cell.innerHTML = `<b>${d}</b><div class="wx-day-icon">${icon}</div>` +
-                    `<strong>${wxNum(dl.temperature_2m_max[i])}°</strong><small>${wxNum(dl.temperature_2m_min[i])}°</small>` +
-                    `<small>💧${wxNum(dl.precipitation_probability_max[i])}%</small>`;
-                cell.title = `${label}\nSuhu ${wxNum(dl.temperature_2m_min[i])}–${wxNum(dl.temperature_2m_max[i])}°C\n` +
-                    `Peluang hujan ${wxNum(dl.precipitation_probability_max[i])}% • Curah ${wxNum(dl.precipitation_sum[i], 1)} mm`;
+                    `<strong>${wxNum(dl.temperature_2m_max[i])}掳</strong><small>${wxNum(dl.temperature_2m_min[i])}掳</small>` +
+                    `<small>馃挧${wxNum(dl.precipitation_probability_max[i])}%</small>`;
+                cell.title = `${label}\nSuhu ${wxNum(dl.temperature_2m_min[i])}鈥�${wxNum(dl.temperature_2m_max[i])}掳C\n` +
+                    `Peluang hujan ${wxNum(dl.precipitation_probability_max[i])}% 鈥� Curah ${wxNum(dl.precipitation_sum[i], 1)} mm`;
             }
             mbox.appendChild(cell);
         }
         const note = document.getElementById('wx-month-note');
-        note.textContent = 'Prakiraan tersedia sekitar 16 hari ke depan; tanggal setelahnya ditandai "–". Tanggal lalu memakai data model cuaca.';
+        note.textContent = 'Prakiraan tersedia sekitar 16 hari ke depan; tanggal setelahnya ditandai "鈥�". Tanggal lalu memakai data model cuaca.';
     }
 
     function openWeatherDetail() {
@@ -2375,11 +2361,11 @@ document.addEventListener('DOMContentLoaded', function() {
         return {
             id: `solat-${dateKey}-${prayerKey}`,
             kind: 'prayer',
-            title: `🕌 Waktu ${p.name}${jumat ? ' (Jumat)' : ''}`,
+            title: `馃晫 Waktu ${p.name}${jumat ? ' (Jumat)' : ''}`,
             startTime: at.toISOString(),
             endTime: at.toISOString(),
             description: `Saatnya menunaikan solat ${p.name}.`,
-            subtitle: `${prayerDateLabel(dateKey)} • ${fmtHM(day[prayerKey])} WIB • ${PRAYER_PLACE}`,
+            subtitle: `${prayerDateLabel(dateKey)} 鈥� ${fmtHM(day[prayerKey])} WIB 鈥� ${PRAYER_PLACE}`,
             color: '#0f9d7a',
             alarm: true,
             alarmBefore: 0
@@ -2460,7 +2446,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function renderPrayerCountdown(np, now) {
         const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
         set('prayer-card-count', np ? fmtCountdown(np.at - now) : '');
-        set('prayer-hero-count', np ? '⏳ ' + fmtCountdown(np.at - now) : '');
+        set('prayer-hero-count', np ? '鈴� ' + fmtCountdown(np.at - now) : '');
     }
 
     function renderPrayerAll() {
@@ -2475,7 +2461,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const jumat = np.key === 'dzuhur' && isFridayKey(np.dateKey);
             label = `Menuju ${np.name}${jumat ? ' (Jumat)' : ''}${besok ? ' besok' : ''}`;
         } else if (prayerState === 'loading') {
-            label = 'Memuat jadwal…';
+            label = 'Memuat jadwal鈥�';
         } else {
             label = 'Jadwal belum tersedia';
         }
@@ -2495,7 +2481,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const day = prayerTimes[viewKey];
 
         const dateEl = document.getElementById('prayer-date');
-        if (dateEl) dateEl.textContent = prayerDateLabel(viewKey, true) + (viewKey === todayKey ? ' • Hari ini' : '');
+        if (dateEl) dateEl.textContent = prayerDateLabel(viewKey, true) + (viewKey === todayKey ? ' 鈥� Hari ini' : '');
         const prev = document.getElementById('prayer-nav-prev');
         const next = document.getElementById('prayer-nav-next');
         if (prev) prev.disabled = !prayerTimes[shiftKey(viewKey, -1)];
@@ -2507,7 +2493,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (!day) {
             list.innerHTML = '<li class="prayer-empty">' + (prayerState === 'loading'
-                ? 'Memuat jadwal solat…'
+                ? 'Memuat jadwal solat鈥�'
                 : 'Jadwal belum bisa dimuat. Periksa koneksi internet lalu tekan "Perbarui jadwal".') + '</li>';
         } else {
             list.innerHTML = PRAYERS.map(p => {
@@ -2537,7 +2523,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!day) src.textContent = '';
             else if (day.src === 'myquran') src.textContent = 'Sumber: jadwal resmi Kemenag RI (Kota Jakarta) lewat MyQuran. Semua waktu dalam WIB.';
             else src.textContent = 'Sumber cadangan: Aladhan (metode Kemenag RI, koordinat ' + PRAYER_PLACE +
-                '). Hasil hitungan, bisa selisih 1–4 menit dari jadwal resmi. Semua waktu dalam WIB.';
+                '). Hasil hitungan, bisa selisih 1鈥�4 menit dari jadwal resmi. Semua waktu dalam WIB.';
         }
     }
 
@@ -2652,9 +2638,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         $('prayer-refresh').addEventListener('click', async () => {
-            showPrayerStatus('Memperbarui jadwal…');
+            showPrayerStatus('Memperbarui jadwal鈥�');
             const ok = await loadPrayerTimes(true);
-            showPrayerStatus(ok ? '✔ Jadwal solat diperbarui.' : 'Gagal memuat jadwal. Periksa koneksi internet.', !ok);
+            showPrayerStatus(ok ? '鉁� Jadwal solat diperbarui.' : 'Gagal memuat jadwal. Periksa koneksi internet.', !ok);
         });
 
         renderPrayerAll();
@@ -2705,13 +2691,13 @@ document.addEventListener('DOMContentLoaded', function() {
         alarmTimeEl.textContent = ev.kind === 'prayer'
             ? ev.subtitle
             : start.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' }) +
-                ' • ' + formatTime(start) + ' - ' + formatTime(end);
+                ' 鈥� ' + formatTime(start) + ' - ' + formatTime(end);
         alarmDescEl.textContent = ev.description || '';
         alarmDescEl.hidden = !ev.description;
         updateAlarmQueueLabel();
 
         alarmOverlay.hidden = false;
-        document.title = '🔔 ' + ev.title;
+        document.title = '馃敂 ' + ev.title;
         startRinging(false, ev.kind);
     }
 
@@ -2736,8 +2722,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const start = new Date(ev.startTime);
         const options = {
             body: ev.kind === 'prayer'
-                ? describeStart(ev) + ' • ' + ev.subtitle
-                : describeStart(ev) + ' • ' + formatTime(start),
+                ? describeStart(ev) + ' 鈥� ' + ev.subtitle
+                : describeStart(ev) + ' 鈥� ' + formatTime(start),
             tag: 'alarm-' + ev.id,
             requireInteraction: true,
             vibrate: [300, 150, 300, 150, 600]
@@ -2745,11 +2731,11 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const reg = 'serviceWorker' in navigator ? await navigator.serviceWorker.getRegistration() : null;
             if (reg) {
-                await reg.showNotification('🔔 ' + ev.title, options);
+                await reg.showNotification('馃敂 ' + ev.title, options);
                 return;
             }
         } catch (e) { /* lanjut ke cara biasa */ }
-        try { new Notification('🔔 ' + ev.title, options); } catch (e) {}
+        try { new Notification('馃敂 ' + ev.title, options); } catch (e) {}
     }
 
     function updateNotifButton() {
@@ -2760,9 +2746,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         const perm = Notification.permission;
         notifBtn.disabled = perm !== 'default';
-        notifBtn.textContent = perm === 'granted' ? '✔ Notifikasi aktif'
-            : perm === 'denied' ? '🚫 Notifikasi diblokir'
-            : '🔔 Aktifkan notifikasi';
+        notifBtn.textContent = perm === 'granted' ? '鉁� Notifikasi aktif'
+            : perm === 'denied' ? '馃毇 Notifikasi diblokir'
+            : '馃敂 Aktifkan notifikasi';
         if (perm === 'denied') {
             showAlarmStatus('Izinkan notifikasi lewat pengaturan situs di browser Anda.', true);
         }
@@ -2868,7 +2854,7 @@ document.addEventListener('DOMContentLoaded', function() {
         rt = { token, target: target || 'alarmSound', blob, name, type: type || blob.type || 'audio/mpeg', url, duration: 0, start: 0, end: 0, peaks: null, audio: null, lastTime: 0 };
 
         rtFile.textContent = name;
-        rtWaveMsg.textContent = 'Memuat lagu…';
+        rtWaveMsg.textContent = 'Memuat lagu鈥�';
         rtNow.textContent = fmtTime(0);
         rtTotal.textContent = '/ ' + fmtTime(0);
         setRtEnabled(false);
@@ -2984,7 +2970,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         clearInterval(rt.guard);
         cancelAnimationFrame(rt.raf);
-        if (rtTestBtn) rtTestBtn.textContent = '▶ Tes potongan';
+        if (rtTestBtn) rtTestBtn.textContent = '鈻� Tes potongan';
         drawWave();
     }
 
@@ -3001,7 +2987,7 @@ document.addEventListener('DOMContentLoaded', function() {
         try { audio.currentTime = rt.start; } catch (e) {}
         rt.audio = audio;
         rt.lastTime = rt.start;
-        rtTestBtn.textContent = '⏹ Stop tes';
+        rtTestBtn.textContent = '鈴� Stop tes';
 
         audio.play().catch(() => {
             rtWaveMsg.textContent = 'Browser menahan suara. Ketuk "Tes potongan" sekali lagi.';
@@ -3039,7 +3025,7 @@ document.addEventListener('DOMContentLoaded', function() {
             await idbRequest('readwrite', store => store.put(record, target));
             await loadCustomSound();
             closeRingtoneEditor();
-            const done = '✔ Nada dering disimpan. Tekan "Coba" untuk mendengar hasilnya.';
+            const done = '鉁� Nada dering disimpan. Tekan "Coba" untuk mendengar hasilnya.';
             if (target === 'prayerSound') showPrayerStatus(done); else showAlarmStatus(done);
         } catch (e) {
             rtWaveMsg.textContent = 'Gagal menyimpan (penyimpanan browser penuh atau diblokir).';
@@ -3293,7 +3279,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (piketDini) {
             const pb = document.createElement('span');
             pb.className = 'piket-badge';
-            pb.textContent = '🌙';
+            pb.textContent = '馃寵';
             pb.title = 'Piket dini hari (00.00 - 06.00):\n' +
                 piketDini.map(p => `${p.time}  ${p.names}`).join('\n');
             dayCell.appendChild(pb);
@@ -3399,7 +3385,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (weekNotes) {
                 const chip = document.createElement('span');
                 chip.className = 'week-note-chip';
-                chip.textContent = '📝 ' + weekNotes;
+                chip.textContent = '馃摑 ' + weekNotes;
                 chip.title = weekNotes + ' catatan';
                 dayHeader.appendChild(chip);
             }
@@ -3476,7 +3462,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (isTodayDate(currentDate)) {
             const pill = document.createElement('span');
             pill.className = 'today-pill';
-            pill.textContent = '📍 Hari Ini';
+            pill.textContent = '馃搷 Hari Ini';
             dayHeader.appendChild(pill);
         }
         if (hasA(currentDate)) {
@@ -3488,7 +3474,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (holidayName) {
             const hl = document.createElement('div');
             hl.className = 'holiday-banner';
-            hl.textContent = '🎌 ' + holidayName;
+            hl.textContent = '馃帉 ' + holidayName;
             dayHeader.appendChild(hl);
         }
         dayContainer.appendChild(dayHeader);
@@ -3569,8 +3555,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
             eventElement.innerHTML = `
                 <div class="event-title">
-                    <span>${escapeHtml(event.title)}${event.alarm ? ' 🔔' : ''}</span>
-                    <span style="color: ${event.color}">●</span>
+                    <span>${escapeHtml(event.title)}${event.alarm ? ' 馃敂' : ''}</span>
+                    <span style="color: ${event.color}">鈼�</span>
                 </div>
                 <div class="event-time">${formatDateTime(startDate, endDate)}</div>
                 ${event.description ? `<div class="event-description">${escapeHtml(event.description)}</div>` : ''}
@@ -3806,7 +3792,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const fmt = d => d.toLocaleDateString('id-ID', { month: 'short', day: 'numeric' });
 
         if (isSameDay) {
-            return `${fmt(startDate)} • ${formatTime(startDate)} - ${formatTime(endDate)}`;
+            return `${fmt(startDate)} 鈥� ${formatTime(startDate)} - ${formatTime(endDate)}`;
         }
         return `${fmt(startDate)} ${formatTime(startDate)} - ${fmt(endDate)} ${formatTime(endDate)}`;
     }
