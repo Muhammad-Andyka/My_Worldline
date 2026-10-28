@@ -17,7 +17,7 @@
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- ?v=3 memaksa browser mengambil file terbaru. Naikkan angkanya (v=4, v=5, ...) setiap kali style.css / script.js diubah -->
-    <link rel="stylesheet" href="style.css?v=19">
+    <link rel="stylesheet" href="style.css?v=21">
 </head>
 
 <body>
@@ -51,18 +51,18 @@
                 <!-- Kondisi udara & cuaca: Semper Barat -->
                 <div class="wx-card" id="wx-card">
                     <div class="wx-top">
-                        <div class="wx-place">馃搷 Semper Barat, Jakarta Utara</div>
+                        <div class="wx-place">&#x1F4CD; Semper Barat, Jakarta Utara</div>
                         <button type="button" id="wx-detail-btn" class="note-ghost-btn wx-detail-btn">Detail</button>
                     </div>
                     <div class="wx-main">
-                        <div class="wx-icon" id="wx-icon">馃尅锔�</div>
+                        <div class="wx-icon" id="wx-icon">&#x1F321;&#xFE0F;</div>
                         <div class="wx-now">
-                            <div class="wx-temp" id="wx-temp">--掳C</div>
-                            <div class="wx-desc" id="wx-desc">Memuat cuaca鈥�</div>
+                            <div class="wx-temp" id="wx-temp">--&#xB0;C</div>
+                            <div class="wx-desc" id="wx-desc">Memuat cuaca&#x2026;</div>
                         </div>
                         <div class="wx-aqi" id="wx-aqi">
                             <span class="wx-aqi-cap">Udara</span>
-                            <span class="wx-aqi-val" id="wx-aqi-val">鈥�</span>
+                            <span class="wx-aqi-val" id="wx-aqi-val">&#x2013;</span>
                             <span class="wx-aqi-label" id="wx-aqi-label">AQI</span>
                         </div>
                     </div>
@@ -78,50 +78,50 @@
                 </div>
                 <div class="notes-panel" id="notes-panel">
                     <div class="notes-panel-head">
-                        <div class="alarm-panel-title">馃摑 Catatan Hari Ini</div>
+                        <div class="alarm-panel-title">&#x1F4DD; Catatan Hari Ini</div>
                         <span class="notes-count-pill" id="notes-today-count">0</span>
                     </div>
                     <div class="notes-panel-date" id="notes-panel-date"></div>
                     <div class="notes-mini-list" id="notes-mini-list"></div>
                     <div class="notes-panel-actions">
-                        <button type="button" id="notes-panel-add" class="note-add-btn">锛� Tambah</button>
-                        <button type="button" id="notes-open-book" class="note-ghost-btn">馃摉 Buku catatan</button>
+                        <button type="button" id="notes-panel-add" class="note-add-btn">&#xFF0B; Tambah</button>
+                        <button type="button" id="notes-open-book" class="note-ghost-btn">&#x1F4D6; Buku catatan</button>
                     </div>
                 </div>
                 <div class="prayer-card" id="prayer-card">
                     <div class="prayer-card-top">
-                        <div class="prayer-card-title">馃晫 Waktu Solat</div>
-                        <div class="prayer-card-place">馃搷 Semper Barat, Jakarta Utara</div>
+                        <div class="prayer-card-title">&#x1F54C; Waktu Solat</div>
+                        <div class="prayer-card-place">&#x1F4CD; Semper Barat, Jakarta Utara</div>
                     </div>
                     <div class="prayer-card-next">
                         <div>
-                            <div class="prayer-card-label" id="prayer-card-label">Memuat jadwal鈥�</div>
+                            <div class="prayer-card-label" id="prayer-card-label">Memuat jadwal&#x2026;</div>
                             <div class="prayer-card-time" id="prayer-card-time">--.--</div>
                         </div>
                         <div class="prayer-card-count" id="prayer-card-count"></div>
                     </div>
-                    <button type="button" id="prayer-detail-btn" class="prayer-detail-btn">馃摉 Detail &amp; pengaturan</button>
+                    <button type="button" id="prayer-detail-btn" class="prayer-detail-btn">&#x1F4D6; Detail &amp; pengaturan</button>
                 </div>
                 <div class="alarm-panel">
-                    <div class="alarm-panel-title">馃敂 Nada Alarm</div>
-                    <div id="alarm-sound-name" class="alarm-sound-name">馃幍 Nada bawaan (lonceng)</div>
+                    <div class="alarm-panel-title">&#x1F514; Nada Alarm</div>
+                    <div id="alarm-sound-name" class="alarm-sound-name">&#x1F3B5; Nada bawaan (lonceng)</div>
                     <div class="alarm-buttons">
-                        <button id="alarm-pick-btn" type="button">馃搧 Pilih lagu</button>
-                        <button id="alarm-edit-btn" type="button">鉁� Atur potongan</button>
-                        <button id="alarm-test-btn" type="button">鈻� Coba</button>
-                        <button id="alarm-reset-btn" type="button">鈫� Nada bawaan</button>
+                        <button id="alarm-pick-btn" type="button">&#x1F4C1; Pilih lagu</button>
+                        <button id="alarm-edit-btn" type="button">&#x2702; Atur potongan</button>
+                        <button id="alarm-test-btn" type="button">&#x25B6; Coba</button>
+                        <button id="alarm-reset-btn" type="button">&#x21BA; Nada bawaan</button>
                     </div>
                     <label class="volume-row">
-                        <span>馃攰 Volume</span>
+                        <span>&#x1F50A; Volume</span>
                         <input type="range" id="alarm-volume" min="0" max="100" value="80">
                     </label>
-                    <button id="notif-btn" type="button" class="notif-btn">馃敂 Aktifkan notifikasi</button>
+                    <button id="notif-btn" type="button" class="notif-btn">&#x1F514; Aktifkan notifikasi</button>
                     <input type="file" id="alarm-file" accept="audio/*" hidden>
                     <div id="alarm-status" class="alarm-status"></div>
                     <div class="alarm-hint">Alarm hanya berbunyi selama kalender ini terbuka di browser.</div>
                 </div>
                 <div class="alarm-panel piket-panel">
-                    <div class="alarm-panel-title">馃寵 Alarm Piket Malam</div>
+                    <div class="alarm-panel-title">&#x1F319; Alarm Piket Malam</div>
                     <label class="piket-row">
                         <span>Siapa</span>
                         <select id="piket-who">
@@ -215,7 +215,7 @@
                 <div class="form-group alarm-group">
                     <label class="alarm-check">
                         <input type="checkbox" id="event-alarm" checked>
-                        <span>馃敂 Bunyikan alarm</span>
+                        <span>&#x1F514; Bunyikan alarm</span>
                     </label>
                     <select id="event-alarm-before" aria-label="Waktu alarm">
                         <option value="0" selected>Tepat waktu</option>
@@ -240,7 +240,7 @@
                 <p><i class="fas fa-calendar-day"></i> <span id="details-date">Tanggal</span></p>
                 <p><i class="fas fa-clock"></i> <span id="details-time">Waktu</span></p>
                 <p><i class="fas fa-align-left"></i> <span id="details-description">Deskripsi</span></p>
-                <p><span>馃敂</span> <span id="details-alarm">Alarm</span></p>
+                <p><span>&#x1F514;</span> <span id="details-alarm">Alarm</span></p>
             </div>
             <div class="event-actions">
                 <button id="edit-event-btn">Edit</button>
@@ -254,14 +254,14 @@
     <div class="modal" id="notes-book-modal">
         <div class="modal-content notes-book">
             <span class="close-btn" id="notes-book-close">&times;</span>
-            <h2>馃摉 Buku Catatan</h2>
+            <h2>&#x1F4D6; Buku Catatan</h2>
             <div class="notes-toolbar">
-                <input type="search" id="notes-search" placeholder="Cari catatan鈥�" aria-label="Cari catatan" autocomplete="off">
-                <button type="button" id="notes-book-add" class="note-add-btn">锛� Catatan</button>
+                <input type="search" id="notes-search" placeholder="Cari catatan&#x2026;" aria-label="Cari catatan" autocomplete="off">
+                <button type="button" id="notes-book-add" class="note-add-btn">&#xFF0B; Catatan</button>
             </div>
             <div class="notes-chips" id="notes-chips">
                 <button type="button" class="note-chip active" data-mode="all">Semua</button>
-                <button type="button" class="note-chip" data-mode="pinned">馃搶 Disematkan</button>
+                <button type="button" class="note-chip" data-mode="pinned">&#x1F4CC; Disematkan</button>
                 <button type="button" class="note-chip" data-mode="month">Bulan ini</button>
                 <button type="button" class="note-chip" data-mode="open">Belum selesai</button>
             </div>
@@ -286,7 +286,7 @@
                 </div>
                 <div class="form-group">
                     <label for="note-body">Isi catatan</label>
-                    <textarea id="note-body" rows="6" maxlength="2000" placeholder="Tulis catatanmu di sini鈥�"></textarea>
+                    <textarea id="note-body" rows="6" maxlength="2000" placeholder="Tulis catatanmu di sini&#x2026;"></textarea>
                     <div class="note-counter" id="note-counter">0 / 2000</div>
                 </div>
                 <div class="form-group">
@@ -295,17 +295,17 @@
                 </div>
                 <div class="form-group">
                     <label>Lampiran <small>(foto / file)</small></label>
-                    <button type="button" id="att-add" class="note-ghost-btn">馃搸 Tambah foto / file</button>
+                    <button type="button" id="att-add" class="note-ghost-btn">&#x1F4CE; Tambah foto / file</button>
                     <div class="att-hint">Bisa pilih <b>banyak file sekaligus</b> (foto, PDF, RAR, dll.) atau seret file ke jendela ini.</div>
                     <input type="file" id="att-input" multiple hidden>
                     <div class="att-edit-list" id="att-edit-list"></div>
                     <div class="note-counter" id="att-info"></div>
                 </div>
-                <label class="switch-row"><span>馃搶 Sematkan di atas</span>
+                <label class="switch-row"><span>&#x1F4CC; Sematkan di atas</span>
                     <input type="checkbox" class="switch" id="note-pinned"></label>
                 <div class="note-error" id="note-error" role="alert"></div>
                 <div class="note-form-actions">
-                    <button type="button" id="note-delete" class="note-delete-btn" hidden>馃棏锔� Hapus</button>
+                    <button type="button" id="note-delete" class="note-delete-btn" hidden>&#x1F5D1;&#xFE0F; Hapus</button>
                     <button type="button" id="note-cancel" class="note-cancel-btn">Batal</button>
                     <button type="submit" class="note-save-btn">Simpan</button>
                 </div>
@@ -317,8 +317,8 @@
     <div class="modal" id="wx-modal">
         <div class="modal-content notes-book">
             <span class="close-btn" id="wx-close">&times;</span>
-            <h2>馃對锔� Cuaca &amp; Udara</h2>
-            <div class="wx-place">馃搷 Semper Barat, Jakarta Utara</div>
+            <h2>&#x1F326;&#xFE0F; Cuaca &amp; Udara</h2>
+            <div class="wx-place">&#x1F4CD; Semper Barat, Jakarta Utara</div>
             <div class="notes-chips" id="wx-tabs" style="margin-top:.7rem">
                 <button type="button" class="note-chip active" data-tab="today">Hari ini</button>
                 <button type="button" class="note-chip" data-tab="month">Bulan ini</button>
@@ -337,10 +337,10 @@
     <div class="modal att-viewer" id="att-viewer">
         <div class="att-viewer-box">
             <button type="button" class="att-viewer-close" id="att-viewer-close" aria-label="Tutup">&times;</button>
-            <button type="button" class="att-viewer-share" id="att-viewer-share">馃摛 Bagikan</button>
-            <button type="button" class="att-viewer-nav prev" id="att-viewer-prev" aria-label="Sebelumnya">鈥�</button>
+            <button type="button" class="att-viewer-share" id="att-viewer-share">&#x1F4E4; Bagikan</button>
+            <button type="button" class="att-viewer-nav prev" id="att-viewer-prev" aria-label="Sebelumnya">&#x2039;</button>
             <img id="att-viewer-img" alt="">
-            <button type="button" class="att-viewer-nav next" id="att-viewer-next" aria-label="Berikutnya">鈥�</button>
+            <button type="button" class="att-viewer-nav next" id="att-viewer-next" aria-label="Berikutnya">&#x203A;</button>
             <div class="att-viewer-name" id="att-viewer-name"></div>
         </div>
     </div>
@@ -349,7 +349,7 @@
     <div class="modal" id="share-modal">
         <div class="modal-content note-editor">
             <span class="close-btn" id="share-close">&times;</span>
-            <h2>馃摛 Bagikan</h2>
+            <h2>&#x1F4E4; Bagikan</h2>
             <textarea id="share-text" rows="6" readonly></textarea>
             <div class="share-actions">
                 <a id="share-wa" class="share-btn" target="_blank" rel="noopener">WhatsApp</a>
@@ -366,11 +366,11 @@
     <div class="modal" id="prayer-modal">
         <div class="modal-content prayer-content">
             <span class="close-btn" id="prayer-close">&times;</span>
-            <h2>馃晫 Jadwal Solat</h2>
+            <h2>&#x1F54C; Jadwal Solat</h2>
 
             <div class="prayer-hero">
-                <div class="prayer-hero-place">馃搷 Semper Barat, Jakarta Utara</div>
-                <div class="prayer-hero-label" id="prayer-hero-label">Memuat jadwal鈥�</div>
+                <div class="prayer-hero-place">&#x1F4CD; Semper Barat, Jakarta Utara</div>
+                <div class="prayer-hero-label" id="prayer-hero-label">Memuat jadwal&#x2026;</div>
                 <div class="prayer-hero-time" id="prayer-hero-time">--.--</div>
                 <div class="prayer-hero-count" id="prayer-hero-count"></div>
             </div>
@@ -382,19 +382,19 @@
                 <button type="button" id="prayer-nav-next" aria-label="Hari berikutnya"><i
                         class="fas fa-chevron-right"></i></button>
             </div>
-            <button type="button" id="prayer-nav-today" class="prayer-today-link" hidden>鈫� Kembali ke hari ini</button>
+            <button type="button" id="prayer-nav-today" class="prayer-today-link" hidden>&#x21A9; Kembali ke hari ini</button>
 
             <ul class="prayer-list" id="prayer-list"></ul>
             <div class="prayer-info" id="prayer-info"></div>
             <div class="prayer-source" id="prayer-source"></div>
 
             <div class="prayer-settings">
-                <h3>鈿� Pengaturan alarm solat</h3>
+                <h3>&#x2699; Pengaturan alarm solat</h3>
                 <label class="switch-row"><span>Aktifkan alarm solat</span>
                     <input type="checkbox" class="switch" id="prayer-master"></label>
-                <label class="switch-row"><span>馃攰 Bunyikan suara</span>
+                <label class="switch-row"><span>&#x1F50A; Bunyikan suara</span>
                     <input type="checkbox" class="switch" id="prayer-sound-on"></label>
-                <label class="switch-row"><span>馃敂 Notifikasi saat aplikasi di latar belakang</span>
+                <label class="switch-row"><span>&#x1F514; Notifikasi saat aplikasi di latar belakang</span>
                     <input type="checkbox" class="switch" id="prayer-notif-on"></label>
                 <label class="piket-row"><span>Ingatkan</span>
                     <select id="prayer-before">
@@ -405,19 +405,19 @@
                         <option value="30">30 menit sebelumnya</option>
                     </select>
                 </label>
-                <label class="volume-row"><span>馃攰 Volume</span>
+                <label class="volume-row"><span>&#x1F50A; Volume</span>
                     <input type="range" id="prayer-volume" min="0" max="100" value="80"></label>
 
-                <div class="alarm-panel-title prayer-sound-title">馃幍 Nada solat</div>
-                <div id="prayer-sound-name" class="alarm-sound-name">馃晫 Nada bawaan (lembut)</div>
+                <div class="alarm-panel-title prayer-sound-title">&#x1F3B5; Nada solat</div>
+                <div id="prayer-sound-name" class="alarm-sound-name">&#x1F54C; Nada bawaan (lembut)</div>
                 <div class="alarm-buttons">
-                    <button id="prayer-pick-btn" type="button">馃搧 Pilih lagu</button>
-                    <button id="prayer-edit-btn" type="button">鉁� Atur potongan</button>
-                    <button id="prayer-test-btn" type="button">鈻� Coba</button>
-                    <button id="prayer-reset-btn" type="button">鈫� Nada bawaan</button>
+                    <button id="prayer-pick-btn" type="button">&#x1F4C1; Pilih lagu</button>
+                    <button id="prayer-edit-btn" type="button">&#x2702; Atur potongan</button>
+                    <button id="prayer-test-btn" type="button">&#x25B6; Coba</button>
+                    <button id="prayer-reset-btn" type="button">&#x21BA; Nada bawaan</button>
                 </div>
                 <input type="file" id="prayer-file" accept="audio/*" hidden>
-                <button id="prayer-refresh" type="button" class="notif-btn">鈫� Perbarui jadwal</button>
+                <button id="prayer-refresh" type="button" class="notif-btn">&#x21BB; Perbarui jadwal</button>
                 <div id="prayer-status" class="alarm-status"></div>
                 <div class="alarm-hint">Alarm solat hanya berbunyi selama kalender ini terbuka di browser.</div>
             </div>
@@ -428,7 +428,7 @@
     <div class="modal" id="ringtone-modal">
         <div class="modal-content ringtone-content">
             <span class="close-btn" id="rt-close">&times;</span>
-            <h2>馃幍 Atur Nada Dering</h2>
+            <h2>&#x1F3B5; Atur Nada Dering</h2>
             <div class="rt-file" id="rt-file">-</div>
 
             <div class="rt-wave-wrap">
@@ -438,13 +438,13 @@
             <div class="rt-time-row"><span id="rt-now">0:00.0</span><span id="rt-total">/ 0:00.0</span></div>
 
             <div class="rt-range">
-                <div class="rt-range-head"><span>鈻� Mulai dari</span><b id="rt-start-label">0:00.0</b></div>
+                <div class="rt-range-head"><span>&#x25B6; Mulai dari</span><b id="rt-start-label">0:00.0</b></div>
                 <input type="range" id="rt-start" min="0" max="1" step="0.1" value="0" disabled>
                 <button type="button" class="rt-mini" id="rt-set-start" disabled>Mulai dari posisi tes</button>
             </div>
 
             <div class="rt-range">
-                <div class="rt-range-head"><span>鈴� Berhenti di</span><b id="rt-end-label">0:00.0</b></div>
+                <div class="rt-range-head"><span>&#x23F9; Berhenti di</span><b id="rt-end-label">0:00.0</b></div>
                 <input type="range" id="rt-end" min="0" max="1" step="0.1" value="1" disabled>
                 <button type="button" class="rt-mini" id="rt-set-end" disabled>Berhenti di posisi tes</button>
             </div>
@@ -452,8 +452,8 @@
             <div class="rt-length" id="rt-length">Durasi potongan: 0:00.0</div>
 
             <div class="rt-actions">
-                <button type="button" id="rt-test" disabled>鈻� Tes potongan</button>
-                <button type="button" id="rt-save" disabled>馃捑 Jadikan nada dering</button>
+                <button type="button" id="rt-test" disabled>&#x25B6; Tes potongan</button>
+                <button type="button" id="rt-save" disabled>&#x1F4BE; Jadikan nada dering</button>
             </div>
             <div class="rt-hint">Geser penggeser untuk memilih bagian lagu, tekan <b>Tes</b> untuk mendengarkan, lalu
                 <b>Jadikan nada dering</b>. Saat tes berjalan, tombol "posisi tes" menandai titik mulai/berhenti tepat
@@ -466,20 +466,20 @@
         hidden>
         <div class="alarm-card" id="alarm-card">
             <div class="alarm-bar"></div>
-            <div class="alarm-bell-wrap"><span class="alarm-bell">馃敂</span></div>
+            <div class="alarm-bell-wrap"><span class="alarm-bell">&#x1F514;</span></div>
             <div class="alarm-when" id="alarm-when"></div>
             <h2 class="alarm-title" id="alarm-title"></h2>
             <div class="alarm-time" id="alarm-time"></div>
             <p class="alarm-desc" id="alarm-desc"></p>
             <div class="alarm-queue" id="alarm-queue"></div>
             <div class="alarm-actions">
-                <button id="alarm-snooze" type="button">馃槾 Tunda 5 menit</button>
-                <button id="alarm-dismiss" type="button">鉁� Matikan</button>
+                <button id="alarm-snooze" type="button">&#x1F634; Tunda 5 menit</button>
+                <button id="alarm-dismiss" type="button">&#x2714; Matikan</button>
             </div>
         </div>
     </div>
 
-    <script src="script.js?v=19"></script>
+    <script src="script.js?v=21"></script>
 </body>
 
 </html>
