@@ -2124,7 +2124,7 @@ input.switch:focus-visible {
         font-size: 0.55rem;
     }
 
-    /* Ikon 馃寵 dipindah ke pojok kiri bawah agar tidak menutupi angka tanggal */
+    /* Ikon \01F319 dipindah ke pojok kiri bawah agar tidak menutupi angka tanggal */
     .piket-badge {
         top: auto;
         right: auto;
@@ -2244,7 +2244,7 @@ input.switch:focus-visible {
 .note-check:checked { background-color: var(--note-color); }
 
 .note-check:checked::after {
-    content: '鉁�';
+    content: '\002713';
     position: absolute;
     inset: 0;
     display: flex;
@@ -2722,7 +2722,7 @@ input.switch:focus-visible {
 
 .att-thumb:hover { transform: none; box-shadow: 0 0.2rem 0.7rem rgba(0, 0, 0, 0.2); }
 .att-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.att-thumb.missing::after { content: '馃柤锔�'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; opacity: 0.5; }
+.att-thumb.missing::after { content: '\01F5BC\00FE0F'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; opacity: 0.5; }
 
 .att-chip {
     display: flex;
@@ -2877,7 +2877,7 @@ input.switch:focus-visible {
 .att-thumb .att-progress { position: absolute; left: 0.3rem; right: 0.3rem; bottom: 1.2rem; }
 .att-thumb .att-progress-text { position: absolute; left: 0; right: 0; bottom: 0.15rem; color: #fff; text-align: center; text-shadow: 0 0 3px #000; }
 .att-thumb.missing { border: 2px dashed var(--danger-color); }
-.att-thumb.missing::after { content: '鈿�'; color: var(--danger-color); opacity: 1; font-size: 1.6rem; }
+.att-thumb.missing::after { content: '\0026A0'; color: var(--danger-color); opacity: 1; font-size: 1.6rem; }
 .att-progress[hidden], .att-progress-text[hidden] { display: none; }
 
 .att-hint { margin-top: 0.35rem; font-size: 0.72rem; opacity: 0.7; }
@@ -3030,7 +3030,7 @@ input.switch:focus-visible {
 .att-file { border-radius: 0.8rem; }
 
 .notes-empty { padding: 1.1rem; border-radius: 0.8rem; }
-.notes-empty.big::before { content: '馃棐锔�'; display: block; margin-bottom: 0.4rem; font-size: 2.2rem; }
+.notes-empty.big::before { content: '\01F5D2\00FE0F'; display: block; margin-bottom: 0.4rem; font-size: 2.2rem; }
 
 /* Jendela catatan */
 .note-editor input[type="text"], .note-editor input[type="date"], .note-editor textarea { font-size: 1rem; border-radius: 0.6rem; }
