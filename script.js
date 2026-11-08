@@ -86,12 +86,18 @@ document.addEventListener('DOMContentLoaded', function() {
     const A_START = new Date(2026, 9, 19);
     const A_INTERVAL = 3;
 
-    // ===== Jadwal piket malam (00.00 - 06.00) =====
-    // Mengikuti tanggal siklus A (19, 22, 25, 28, ...). Selang-seling Grup 1 dan Grup 2,
-    // dan tiap Grup bergeser satu slot setiap putaran (yang jam 04 pindah ke jam 00).
-    const PIKET_SLOTS = ['00.00 - 02.00', '02.00 - 04.00', '04.00 - 06.00'];
-    const PIKET_GROUP_1 = [['Abiyu', 'Defri'], ['Diaz', 'Amat'], ['Andyka', 'Bahar']];
-    const PIKET_GROUP_2 = [['Haris', 'Mister'], ['Repi', 'Ikbal'], ['Nur', 'Dody']];
+    // ===== Jadwal piket malam (23.00 - 01.00) + Cuci Piring =====
+    // Mengikuti tanggal siklus A (tiap 3 hari). Putaran ke-0 = 6 Nov 2026. Ada 3 tim, masing-masing 2 pasang;
+    // tiap putaran salah satu pasang jaga 23.00-01.00 dan pasangan lainnya Cuci Piring. Tim bergiliran tiap putaran,
+    // dan setelah 3 putaran peran jaga/cuci piring bertukar (pola berulang tiap 6 putaran = 18 hari, juga mundur).
+    const PIKET_ANCHOR = new Date(2026, 10, 6);
+    const PIKET_JAM = 23;                       // jam mulai (alarm Cuci Piring memakai jam yang sama)
+    const PIKET_TIME = '23.00 - 01.00';
+    const PIKET_TIM = [
+        [['Repi', 'Ikbal'], ['Nur', 'Dody']],
+        [['Diaz', 'Amat'], ['Abiyyu', 'Defri']],
+        [['Dika', 'Bahar'], ['Haris', 'Mister']]
+    ];
 
 
     // App State
@@ -352,28 +358,38 @@ document.addEventListener('DOMContentLoaded', function() {
     function getPiket(date) {
         if (!isCycleA(date)) return null;
         const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-        const k = Math.round((d - A_START) / 86400000) / A_INTERVAL; // putaran ke-k (0, 1, 2, ...)
-        const group = k % 2 === 0 ? PIKET_GROUP_1 : PIKET_GROUP_2;
-        const step = Math.floor(k / 2);
-        return PIKET_SLOTS.map((time, i) => {
-            const people = group[(((i - step) % 3) + 3) % 3];
-            return { time, people, names: people.join(' & ') };
-        });
+        const k = Math.round((d - PIKET_ANCHOR) / 86400000) / A_INTERVAL;    // putaran ke-k (boleh negatif)
+        const team = PIKET_TIM[((k % 3) + 3) % 3];
+        const swap = ((Math.floor(k / 3) % 2) + 2) % 2 === 1;
+        const jaga = swap ? team[1] : team[0];
+        const cuci = swap ? team[0] : team[1];
+        return [
+            { role: 'jaga', time: PIKET_TIME, people: jaga, names: jaga.join(' & ') },
+            { role: 'cuci', time: 'Cuci Piring', people: cuci, names: cuci.join(' & ') }
+        ];
     }
 
-    // Piket malam tanggal siklus (mis. 19) berlangsung pukul 00.00-06.00 pada keesokan harinya (20).
-    // Jadi untuk tanggal kalender tertentu, ambil jadwal dari tanggal siklus H-1.
+    // Piket malam dimulai 23.00 pada tanggal siklus dan selesai 01.00 keesokan harinya.
+    // Untuk jam 00.00 pada tanggal kalender tertentu, ambil jadwal dari tanggal siklus H-1.
     function getPiketDini(date) {
         const kemarin = new Date(date.getFullYear(), date.getMonth(), date.getDate() - 1);
         return getPiket(kemarin);
     }
 
-    function createPiketBlock(slot, withTime) {
+    // cont = true: lanjutan jam 00.00-01.00 (hanya yang jaga)
+    function createPiketBlock(piket, withTime, cont) {
+        const jaga = piket[0], cuci = piket[1];
         const el = document.createElement('div');
         el.className = 'piket-event';
-        el.innerHTML = withTime
-            ? `<strong>Piket</strong> ${slot.time} \u2022 ${escapeHtml(slot.names)}`
-            : escapeHtml(slot.names);
+        if (cont) {
+            el.innerHTML = withTime
+                ? `<strong>Piket</strong> lanjutan s/d 01.00 \u2022 ${escapeHtml(jaga.names)}`
+                : `(lanj.) ${escapeHtml(jaga.names)}`;
+        } else {
+            el.innerHTML = withTime
+                ? `<strong>Piket</strong> ${jaga.time} \u2022 ${escapeHtml(jaga.names)}<br><strong>Cuci Piring</strong> \u2022 ${escapeHtml(cuci.names)}`
+                : `${escapeHtml(jaga.names)}<br>Cuci: ${escapeHtml(cuci.names)}`;
+        }
         el.addEventListener('click', e => e.stopPropagation());
         return el;
     }
@@ -391,16 +407,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function createABadge(date) {
         const badge = document.createElement('span');
-        // Selasa setelah Minggu (baris 2-4) yang jatuh pada siklus A = huruf "C" (cadangan)
+        // Selasa setelah Minggu A (tanggal Selasa di minggu 2-4) = huruf "C" (cadangan)
         const isC = !!date && !isCycleA(date);
         badge.className = 'a-badge' + (isC ? ' c-badge' : '');
         badge.textContent = isC ? 'C' : 'A';
         if (isC) { badge.title = 'Cadangan bulan ini'; return badge; }
         const piket = date ? getPiket(date) : null;
         if (piket) {
-            const besok = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
-            badge.title = `Piket malam ini (dini hari tgl ${besok.getDate()}):\n` +
-                piket.map(p => `${p.time}  ${p.names}`).join('\n');
+            badge.title = `Piket malam ini ${piket[0].time}:\nJaga: ${piket[0].names}\nCuci Piring: ${piket[1].names}`;
         } else {
             badge.title = 'Jadwal A';
         }
@@ -748,7 +762,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 writeJSON('alarmSnoozes', snoozes.filter(sn => sn.at > now));
                 due.forEach(sn => {
                     const ev = events.find(e => e.id === sn.id) ||
-                        (String(sn.id).startsWith('piket-') ? makePiketEvent(Number(String(sn.id).slice(6))) : null) ||
+                        (String(sn.id).startsWith('piket-') ? makePiketEventById(sn.id) : null) ||
                         (String(sn.id).startsWith('solat-') ? makePrayerEventById(String(sn.id)) : null);
                     if (ev) triggerAlarm(ev);
                 });
@@ -757,26 +771,22 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // ===== Alarm piket malam =====
-    // Jadwal piket dihitung dari siklus A (lihat getPiket). Alarm berbunyi di awal tiap slot
-    // (00.00, 02.00, 04.00) untuk nama yang dipilih, atau semua slot bila memilih "Semua orang".
+    // Jadwal piket dihitung dari siklus A (lihat getPiket). Alarm berbunyi pukul 23.00 pada tanggal siklus
+    // untuk nama yang dipilih (yang jaga maupun yang Cuci Piring), atau untuk semua bila memilih "Semua orang".
     function allPiketNames() {
-        return PIKET_GROUP_1.flat().concat(PIKET_GROUP_2.flat());
+        return PIKET_TIM.flat(2);
     }
 
-    // Slot piket yang berawal dari kemarin sampai `days` hari ke depan
+    // Tugas piket yang berawal dari kemarin sampai `days` hari ke depan
     function piketSlots(fromDate, days) {
         const out = [];
         for (let off = -1; off <= days; off++) {
             const cycle = new Date(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate() + off);
             const piket = getPiket(cycle);
             if (!piket) continue;
-            piket.forEach((slot, i) => {
-                out.push({
-                    startMs: new Date(cycle.getFullYear(), cycle.getMonth(), cycle.getDate() + 1, i * 2).getTime(),
-                    time: slot.time,
-                    names: slot.names,
-                    people: slot.people
-                });
+            const startMs = new Date(cycle.getFullYear(), cycle.getMonth(), cycle.getDate(), PIKET_JAM).getTime();
+            piket.forEach(slot => {
+                out.push({ role: slot.role, startMs, time: slot.time, names: slot.names, people: slot.people });
             });
         }
         return out;
@@ -787,22 +797,27 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Bentuk "acara" sementara supaya popup alarm yang sama bisa dipakai
-    function makePiketEvent(startMs) {
+    function makePiketEvent(startMs, role) {
         const start = new Date(startMs);
-        const cycle = new Date(start.getFullYear(), start.getMonth(), start.getDate() - 1);
+        const cycle = new Date(start.getFullYear(), start.getMonth(), start.getDate());
         const piket = getPiket(cycle);
-        const slot = piket && piket[Math.floor(start.getHours() / 2)];
+        const slot = piket && piket.find(s => s.role === role);
         if (!slot) return null;
         return {
-            id: 'piket-' + startMs,
-            title: '\uD83C\uDF19 Piket ' + slot.time,
+            id: 'piket-' + role + '-' + startMs,
+            title: role === 'cuci' ? '\uD83C\uDF7D\uFE0F Cuci Piring' : '\uD83C\uDF19 Piket ' + slot.time,
             startTime: start.toISOString(),
             endTime: new Date(startMs + 2 * 3600000).toISOString(),
-            description: 'Bertugas: ' + slot.names,
+            description: (role === 'cuci' ? 'Bertugas cuci piring: ' : 'Bertugas jaga: ') + slot.names,
             color: '#6f42c1',
             alarm: true,
             alarmBefore: 0
         };
+    }
+
+    function makePiketEventById(id) {
+        const m = /^piket-(jaga|cuci)-(\d+)$/.exec(String(id));
+        return m ? makePiketEvent(Number(m[2]), m[1]) : null;
     }
 
     function checkPiketAlarms(now, fired) {
@@ -811,11 +826,11 @@ document.addEventListener('DOMContentLoaded', function() {
         piketSlots(new Date(now), 1).forEach(slot => {
             if (!piketMatches(slot, piketWho)) return;
             const at = slot.startMs - piketBefore * 60000;
-            const key = 'piket-' + slot.startMs + '@' + at;
+            const key = 'piket-' + slot.role + '-' + slot.startMs + '@' + at;
             if (now >= at && now - at <= ALARM_CATCHUP_MS && !fired[key]) {
                 fired[key] = now;
                 changed = true;
-                const ev = makePiketEvent(slot.startMs);
+                const ev = makePiketEvent(slot.startMs, slot.role);
                 if (ev) triggerAlarm(ev);
             }
         });
@@ -828,7 +843,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const fired = getFired();
         piketSlots(new Date(now), 1).forEach(slot => {
             const at = slot.startMs - piketBefore * 60000;
-            if (at <= now) fired['piket-' + slot.startMs + '@' + at] = now;
+            if (at <= now) fired['piket-' + slot.role + '-' + slot.startMs + '@' + at] = now;
         });
         writeJSON('alarmFired', fired);
     }
@@ -847,9 +862,10 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         const d = new Date(slot.startMs);
-        el.textContent = (piketWho === 'all' ? 'Piket berikutnya: ' : 'Piket berikutnya untuk ' + piketWho + ': ') +
+        const tugas = slot.role === 'cuci' ? 'Cuci Piring' : 'Piket jaga ' + slot.time;
+        el.textContent = (piketWho === 'all' ? 'Berikutnya: ' : 'Berikutnya untuk ' + piketWho + ': ') +
             d.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short' }) +
-            ' \u2022 ' + slot.time + (piketWho === 'all' ? ' (' + slot.names + ')' : '');
+            ' \u2022 ' + tugas + (piketWho === 'all' ? ' (' + slot.names + ')' : '');
     }
 
     function initPiketAlarm() {
@@ -857,10 +873,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const beforeSel = document.getElementById('piket-before');
         if (!whoSel || !beforeSel) return;
 
-        [['Grup 1', PIKET_GROUP_1], ['Grup 2', PIKET_GROUP_2]].forEach(([label, groups]) => {
+        PIKET_TIM.forEach((tim, i) => {
             const og = document.createElement('optgroup');
-            og.label = label;
-            groups.flat().forEach(name => {
+            og.label = 'Tim ' + (i + 1);
+            tim.flat().forEach(name => {
                 const o = document.createElement('option');
                 o.value = name;
                 o.textContent = name;
@@ -1997,16 +2013,41 @@ document.addEventListener('DOMContentLoaded', function() {
     // ===== Kondisi udara & cuaca (Open-Meteo, tanpa API key) =====
     function wxInfo(code) { return WX_CODES[code] || ['\uD83C\uDF21\uFE0F', 'Tidak diketahui']; }
 
-    // Skala US AQI
-    function aqiInfo(v) {
+    // ISPU (Indeks Standar Pencemar Udara, skala Indonesia seperti di udara.jakarta.go.id).
+    // Dihitung dari konsentrasi polutan model (perkiraan): indeks tertinggi dari semua polutan.
+    const ISPU_BP = {
+        'PM2.5': [15.5, 55.4, 150.4, 250.4, 500], PM10: [50, 150, 350, 420, 500],
+        'SO\u2082': [52, 180, 400, 800, 1200], CO: [4000, 8000, 15000, 30000, 45000],
+        'O\u2083': [120, 235, 400, 800, 1000], 'NO\u2082': [80, 200, 1130, 2260, 3000]
+    };
+    function ispuSub(x, bp) {
+        if (x == null || isNaN(x)) return null;
+        const xs = [0].concat(bp), is = [0, 50, 100, 200, 300, 500];
+        for (let i = 0; i < bp.length; i++) {
+            if (x <= xs[i + 1]) return is[i] + (is[i + 1] - is[i]) * (x - xs[i]) / (xs[i + 1] - xs[i]);
+        }
+        return 500;
+    }
+    function computeIspu(air) {
+        if (!air) return null;
+        const vals = [['PM2.5', air.pm2_5], ['PM10', air.pm10], ['SO\u2082', air.sulphur_dioxide],
+            ['CO', air.carbon_monoxide], ['O\u2083', air.ozone], ['NO\u2082', air.nitrogen_dioxide]];
+        let best = null;
+        vals.forEach(([name, x]) => {
+            const sub = ispuSub(x, ISPU_BP[name]);
+            if (sub != null && (!best || sub > best.sub)) best = { name, sub };
+        });
+        return best ? { value: Math.round(best.sub), dominant: best.name } : null;
+    }
+    function ispuInfo(v) {
         if (v == null || isNaN(v)) return { label: 'Tidak tersedia', color: '#858796', tip: 'Data kualitas udara belum tersedia.' };
         if (v <= 50) return { label: 'Baik', color: '#1cc88a', tip: 'Udara bersih, aman untuk beraktivitas di luar.' };
-        if (v <= 100) return { label: 'Sedang', color: '#f6c23e', tip: 'Dapat diterima. Orang yang sangat sensitif sebaiknya mengurangi aktivitas berat di luar.' };
-        if (v <= 150) return { label: 'Tidak sehat bagi kelompok sensitif', color: '#fd7e14', tip: 'Anak-anak, lansia, dan penderita asma/jantung sebaiknya membatasi aktivitas di luar. Pakai masker bila perlu.' };
-        if (v <= 200) return { label: 'Tidak sehat', color: '#e74a3b', tip: 'Kurangi aktivitas berat di luar ruangan dan gunakan masker.' };
-        if (v <= 300) return { label: 'Sangat tidak sehat', color: '#8e44ad', tip: 'Hindari aktivitas di luar ruangan. Gunakan masker.' };
-        return { label: 'Berbahaya', color: '#7b1e3a', tip: 'Tetap di dalam ruangan.' };
+        if (v <= 100) return { label: 'Sedang', color: '#4e73df', tip: 'Dapat diterima. Orang yang sangat sensitif sebaiknya mengurangi aktivitas berat di luar.' };
+        if (v <= 200) return { label: 'Tidak Sehat', color: '#f6a609', tip: 'Anak-anak, lansia, dan penderita asma/jantung sebaiknya membatasi aktivitas di luar. Pakai masker bila perlu.' };
+        if (v <= 300) return { label: 'Sangat Tidak Sehat', color: '#e74a3b', tip: 'Kurangi aktivitas berat di luar ruangan dan gunakan masker.' };
+        return { label: 'Berbahaya', color: '#2d3748', tip: 'Hindari aktivitas di luar ruangan. Tetap di dalam ruangan.' };
     }
+    const UDARA_URL = 'https://udara.jakarta.go.id/';
 
     function wxFetchJSON(url) {
         return fetch(url, { cache: 'no-store' }).then(r => {
@@ -2065,10 +2106,12 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('wx-extra').textContent =
                 `Terasa ${wxNum(cur.apparent_temperature)}\u00B0 \u2022 Lembap ${wxNum(cur.relative_humidity_2m)}% \u2022 Angin ${wxNum(cur.wind_speed_10m)} km/j`;
         }
-        const aqi = aqiInfo(air ? air.us_aqi : null);
+        const ispu = computeIspu(air);
+        const aqi = ispuInfo(ispu ? ispu.value : null);
         const badge = document.getElementById('wx-aqi');
         badge.style.setProperty('--aqi-color', aqi.color);
-        document.getElementById('wx-aqi-val').textContent = air && air.us_aqi != null ? Math.round(air.us_aqi) : '\u2013';
+        badge.title = 'ISPU perkiraan' + (ispu ? ' (polutan dominan ' + ispu.dominant + ')' : '');
+        document.getElementById('wx-aqi-val').textContent = ispu ? ispu.value : '\u2013';
         document.getElementById('wx-aqi-label').textContent = aqi.label;
         const st = document.getElementById('wx-status');
         st.textContent = wxData.fetchedAt
@@ -2095,19 +2138,34 @@ document.addEventListener('DOMContentLoaded', function() {
                 `<div>${label}</div><div class="wx-hero-sub">Terasa ${wxNum(cur.apparent_temperature)}\u00B0 \u2022 Lembap ${wxNum(cur.relative_humidity_2m)}% \u2022 Angin ${wxNum(cur.wind_speed_10m)} km/j</div></div>`;
             box.appendChild(hero);
         }
-        const aqi = aqiInfo(air ? air.us_aqi : null);
+        const ispu = computeIspu(air);
+        const aqi = ispuInfo(ispu ? ispu.value : null);
         const aq = document.createElement('div');
         aq.className = 'wx-aq';
         aq.style.setProperty('--aqi-color', aqi.color);
         const pol = air ? [['PM2.5', air.pm2_5, '\u00B5g/m\u00B3'], ['PM10', air.pm10, '\u00B5g/m\u00B3'], ['O\u2083', air.ozone, '\u00B5g/m\u00B3'],
             ['NO\u2082', air.nitrogen_dioxide, '\u00B5g/m\u00B3'], ['SO\u2082', air.sulphur_dioxide, '\u00B5g/m\u00B3'], ['CO', air.carbon_monoxide, '\u00B5g/m\u00B3']] : [];
-        aq.innerHTML = `<div class="wx-aq-head"><span class="wx-aq-val">${air && air.us_aqi != null ? Math.round(air.us_aqi) : '\u2013'}</span>` +
-            `<div><div class="wx-aq-title">Kualitas Udara (US AQI)</div><div class="wx-aq-label"></div></div></div>` +
-            `<div class="wx-aq-tip"></div><div class="wx-pol">` +
+        aq.innerHTML = `<div class="wx-aq-head"><span class="wx-aq-val">${ispu ? ispu.value : '\u2013'}</span>` +
+            `<div><div class="wx-aq-title">Kualitas Udara (ISPU, perkiraan)</div><div class="wx-aq-label"></div></div></div>` +
+            `<div class="wx-aq-tip"></div><div class="wx-aq-dom"></div><div class="wx-pol">` +
             pol.map(p => `<div><span>${p[0]}</span><strong>${wxNum(p[1], 1)}</strong><small>${p[2]}</small></div>`).join('') + '</div>';
         aq.querySelector('.wx-aq-label').textContent = aqi.label;
         aq.querySelector('.wx-aq-tip').textContent = aqi.tip;
+        aq.querySelector('.wx-aq-dom').textContent = (ispu ? 'Polutan dominan: ' + ispu.dominant + '. ' : '') +
+            (air && air.us_aqi != null ? 'Sebagai pembanding, US AQI: ' + Math.round(air.us_aqi) + '.' : '');
         box.appendChild(aq);
+        const src = document.createElement('div');
+        src.className = 'wx-src';
+        src.innerHTML = 'Angka di atas adalah <b>perkiraan model</b> (Open-Meteo/CAMS) untuk titik ini, bukan hasil alat ukur. ' +
+            'Data resmi stasiun pemantau (Cilincing dan Tanjung Priok) ada di situs Dinas Lingkungan Hidup DKI:';
+        const link = document.createElement('a');
+        link.className = 'wx-link';
+        link.href = UDARA_URL;
+        link.target = '_blank';
+        link.rel = 'noopener';
+        link.textContent = 'Buka udara.jakarta.go.id';
+        src.appendChild(link);
+        box.appendChild(src);
 
         const hourly = wxData.now && wxData.now.hourly;
         if (hourly && hourly.time) {
@@ -3276,13 +3334,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (hasA(date)) dayCell.appendChild(createABadge(date));
 
-        const piketDini = getPiketDini(date);
-        if (piketDini) {
+        const piketMalam = getPiket(date);
+        if (piketMalam) {
             const pb = document.createElement('span');
             pb.className = 'piket-badge';
             pb.textContent = '\uD83C\uDF19';
-            pb.title = 'Piket dini hari (00.00 - 06.00):\n' +
-                piketDini.map(p => `${p.time}  ${p.names}`).join('\n');
+            pb.title = 'Piket malam ' + piketMalam[0].time + ':\nJaga: ' + piketMalam[0].names +
+                '\nCuci Piring: ' + piketMalam[1].names;
             dayCell.appendChild(pb);
         }
 
@@ -3413,9 +3471,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 dayCell.className = 'week-cell' + (isRedDate(dayDate) ? ' red-bg' : '');
                 weekGrid.appendChild(dayCell);
 
-                if (hour < 6 && hour % 2 === 0) {
+                if (hour === 23) {
+                    const piket = getPiket(dayDate);
+                    if (piket) dayCell.appendChild(createPiketBlock(piket, false));
+                } else if (hour === 0) {
                     const piket = getPiketDini(dayDate);
-                    if (piket) dayCell.appendChild(createPiketBlock(piket[hour / 2], false));
+                    if (piket) dayCell.appendChild(createPiketBlock(piket, false, true));
                 }
 
                 getEventsForDateAndHour(dayDate, hour).forEach(event => {
@@ -3494,9 +3555,12 @@ document.addEventListener('DOMContentLoaded', function() {
             timeBlock.className = 'day-time-block day-hour';
             dayGrid.appendChild(timeBlock);
 
-            if (hour < 6 && hour % 2 === 0) {
+            if (hour === 23) {
+                const piket = getPiket(currentDate);
+                if (piket) timeBlock.appendChild(createPiketBlock(piket, true));
+            } else if (hour === 0) {
                 const piket = getPiketDini(currentDate);
-                if (piket) timeBlock.appendChild(createPiketBlock(piket[hour / 2], true));
+                if (piket) timeBlock.appendChild(createPiketBlock(piket, true, true));
             }
 
             getEventsForDateAndHour(currentDate, hour).forEach(event => {
