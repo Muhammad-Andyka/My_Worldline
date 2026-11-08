@@ -17,7 +17,7 @@
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- ?v=3 memaksa browser mengambil file terbaru. Naikkan angkanya (v=4, v=5, ...) setiap kali style.css / script.js diubah -->
-    <link rel="stylesheet" href="style.css?v=21">
+    <link rel="stylesheet" href="style.css?v=22">
 </head>
 
 <body>
@@ -61,7 +61,7 @@
                             <div class="wx-desc" id="wx-desc">Memuat cuaca&#x2026;</div>
                         </div>
                         <div class="wx-aqi" id="wx-aqi">
-                            <span class="wx-aqi-cap">Udara</span>
+                            <span class="wx-aqi-cap">ISPU</span>
                             <span class="wx-aqi-val" id="wx-aqi-val">&#x2013;</span>
                             <span class="wx-aqi-label" id="wx-aqi-label">AQI</span>
                         </div>
@@ -141,8 +141,8 @@
                         </select>
                     </label>
                     <div id="piket-next" class="piket-next"></div>
-                    <div class="alarm-hint">Alarm berbunyi di awal tiap slot piket (00.00, 02.00, 04.00), selama
-                        kalender ini terbuka di browser.</div>
+                    <div class="alarm-hint">Alarm berbunyi pukul 23.00 pada tanggal piket (untuk yang jaga 23.00 - 01.00
+                        maupun yang Cuci Piring), selama kalender ini terbuka di browser.</div>
                 </div>
                 <div class="backup-panel">
                     <div class="backup-buttons">
@@ -329,7 +329,7 @@
                 <div class="wx-month" id="wx-month"></div>
                 <div class="notes-summary" id="wx-month-note"></div>
             </div>
-            <div class="notes-summary">Sumber: Open-Meteo. Kualitas udara memakai skala US AQI.</div>
+            <div class="notes-summary">Sumber: Open-Meteo (model atmosfer CAMS), bukan alat ukur. Kualitas udara memakai skala ISPU Indonesia (perkiraan).</div>
         </div>
     </div>
 
@@ -479,7 +479,7 @@
         </div>
     </div>
 
-    <script src="script.js?v=21"></script>
+    <script src="script.js?v=22"></script>
 </body>
 
 </html>
